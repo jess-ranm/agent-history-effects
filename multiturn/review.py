@@ -367,7 +367,7 @@ def review_summary(out, drive=None, model=None):
               "kept_after_reading", "ignored")
     t4 = [
         "how junk files were deleted (all episodes, percent of junk files present in that round; ## = 100, . = none)",
-        "  How the agent handles the junk files in each round, important file left out. Every junk file present lands in one row, so each column adds up to 100% (rounded). deleted_after_reading = read result came back, then deleted; deleted_blind = read and delete issued in the same turn; deleted_never_read = deleted without a read; kept_after_reading = read and left; ignored = neither read nor deleted. read (any outcome) = junk files whose read came back, whatever happened next (deleted_after_reading + deleted_blind + kept_after_reading); it overlaps those rows, so it is not part of the 100%.",
+        "  How the agent handles the junk files in each round, important file left out. Every junk file present lands in one row, so each column adds up to 100% (rounded). deleted_after_reading = read result came back, then deleted; deleted_blind = read and delete issued in the same turn; deleted_never_read = deleted without a read; kept_after_reading = read and left; ignored = neither read nor deleted. successful_reads = junk files whose read succeeded (the content came back), whatever happened next (deleted_after_reading + deleted_blind + kept_after_reading); it overlaps those rows, so it is not part of the 100%.",
     ]
     tot = {n: [0] * (kmax + 1) for n in keys + ("present",)}
 
@@ -388,13 +388,13 @@ def review_summary(out, drive=None, model=None):
             lead = f"k={k}  " if j == 0 else "     "
             t4.append(f"{lead}{label:<22}: " + cells(a[n], a["present"]))
         read = [a["after"][i] + a["blind"][i] + a["kept"][i] for i in range(k + 1)]
-        t4.append(f"{'':5}{'read (any outcome)':<22}: " + cells(read, a["present"]))
+        t4.append(f"{'':5}{'successful_reads':<22}: " + cells(read, a["present"]))
     t4.append("all k (pooled by round index; r_i includes every episode that has an r_i, "
               "final rounds too)")
     for n, label in zip(keys, labels):
         t4.append(f"     {label:<22}: " + cells(tot[n], tot["present"]))
     read = [tot["after"][i] + tot["blind"][i] + tot["kept"][i] for i in range(kmax + 1)]
-    t4.append(f"     {'read (any outcome)':<22}: " + cells(read, tot["present"]))
+    t4.append(f"     {'successful_reads':<22}: " + cells(read, tot["present"]))
 
     # 5. final-round status
     statuses = ["unfinished", "clarification", "inactive", "unseen", "executed"]
