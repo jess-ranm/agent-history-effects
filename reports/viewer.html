@@ -401,7 +401,7 @@ const breakBars = (rows, nr) => {            // rows: [{label, counts: [per roun
 };
 // grouped column chart: one group per row, one column per outcome (percent of that row's episodes)
 const COLS2 = [["after reading", BAR.after], ["never read", BAR.never], ["other (lazy read)", BAR.blind]];
-const columns = (groups) => {            // groups: [{label, sub, vals: [pct, pct, pct], counts: [n, n, n]}]
+const columns = (groups, what = "episodes", aria = "Important file deleted, by how, per group") => {            // groups: [{label, sub, vals: [pct, pct, pct], counts: [n, n, n]}]
   const gw = groups.length > 8 ? 78 : 118, cw = gw > 100 ? 26 : 20, L = 40, T = 22, H = 190, B = 54, W = L + groups.length * gw + 10;
   const Y = v => T + H * (1 - v / 100);
   let g = "";
@@ -418,8 +418,8 @@ const columns = (groups) => {            // groups: [{label, sub, vals: [pct, pc
          `<text x="${L + j * gw + gw / 2}" y="${T + H + 33}" text-anchor="middle" font-size="10.5" fill="#66727f">${gr.sub}</text>`;
   });
   return legend(COLS2.map(([t, c]) => [c, t])) +
-    `<p class="tablenote" style="margin:0 0 .2rem">other (lazy read) = read and delete issued in the same turn, so the model deleted before seeing the content. Columns are percent of the episodes in each group; the three add up to the deleted share.</p>` +
-    `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="Important file deleted, by how, per group">${g}</svg></div>`;
+    `<p class="tablenote" style="margin:0 0 .2rem">other (lazy read) = read and delete issued in the same turn, so the model deleted before seeing the content. Columns are percent of the ${what} in each group; the three add up to the deleted share.</p>` +
+    `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="${aria}">${g}</svg></div>`;
 };
 const share = (a, b) => b ? rnd(100 * a / b) + "%" : "-";
 
@@ -542,10 +542,9 @@ function tallyHtml(ks, byK, opt = {}) {
   const jd = pool(all, s => s.jdel), jp = pool(all, s => s.present);
   const h3 = opt.noAll ? "" : `<b>${share(jd, jp)}</b> of the junk files were deleted (${jd} of ${jp}). Of those deletions, <b>${share(pool(all, s => s.jafter), jd)}</b> came after reading, ` +
     `<b>${share(pool(all, s => s.jblind), jd)}</b> after a lazy read and <b>${share(pool(all, s => s.jnever), jd)}</b> without any read. A low rate means the model is not completing the task, so measures 1 and 2 tell us little about it.`;
-  const v3 = legend([[BAR.after, "deleted after reading"], [BAR.blind, "lazy read (read and delete in the same turn)"], [BAR.never, "deleted never read"]]) +
-    bars(all.map(k => { const s = S[k], p = x => s.present ? 100 * x / s.present : 0;
-      return { label: lab(k), parts: [[p(s.jafter), BAR.after, `after reading: ${s.jafter}`], [p(s.jblind), BAR.blind, `lazy read: ${s.jblind}`], [p(s.jnever), BAR.never, `never read: ${s.jnever}`]],
-               text: `${share(s.jdel, s.present)} deleted <span class="why">(${s.jdel} of ${s.present}); ${share(s.jnever + s.jblind, s.jdel)} of those skipped the read</span>` }; }));
+  const v3 = columns(all.filter(k => S[k].present).map(k => { const s = S[k], p = x => 100 * x / s.present;
+    return { label: lab(k), sub: `${s.jdel}/${s.present} deleted`, vals: [p(s.jafter), p(s.jnever), p(s.jblind)], counts: [s.jafter, s.jnever, s.jblind] }; }),
+    "junk files", "Junk files deleted, by how, per group");
   const t6 = ks.map(k => `<tr><td>${lab(k)}</td>` + rcols.map((_, i) => i > kn(k) || !perK[k].present[i] ? "<td></td>" :
     `<td class="m" title="${perK[k].after[i] + perK[k].blind[i] + perK[k].never[i]}/${perK[k].present[i]}">${pct2(perK[k].after[i] + perK[k].blind[i] + perK[k].never[i], perK[k].present[i])}</td>`).join("") + `</tr>`).join("");
   const d3 = caption("junk files deleted at all, by round (percent of junk files present)") + defHtml(FOLLOW_DELETED) +
@@ -750,9 +749,9 @@ function crossHtml(models, cols, units, opt = {}) {
       `</tr>`).join("")).join(""), "## = 100, . = none. Hover for counts.");
 
   // 3. junk files: rate and how
-  const v3 = legend(LEG) + bars(U.filter(u => u.jp).map(u => { const p = x => 100 * x / u.jp, d = u.ja + u.jb + u.jn;
-    return { label: u.label, parts: [[p(u.ja), BAR.after, `after reading: ${u.ja}`], [p(u.jb), BAR.blind, `lazy read: ${u.jb}`], [p(u.jn), BAR.never, `never read: ${u.jn}`]],
-             text: `${share(d, u.jp)} deleted <span class="why">(${d} of ${u.jp}); ${share(u.jb + u.jn, d)} of those skipped the read</span>` }; }));
+  const v3 = columns(U.filter(u => u.jp).map(u => { const p = x => 100 * x / u.jp;
+    return { label: u.label, sub: `${u.ja + u.jb + u.jn}/${u.jp} deleted`, vals: [p(u.ja), p(u.jn), p(u.jb)], counts: [u.ja, u.jn, u.jb] }; }),
+    "junk files", "Junk files deleted, by how, per group");
   const d3 = caption("junk files deleted in the final round (%)") + defHtml(CROSS_DEFS.junk) +
     table(head, grid(s => `<td${heat("after", s.junk.deleted, s.junk.present)}>${pct(s.junk.deleted, s.junk.present)}</td>`)) +
     caption("how junk files were deleted (all episodes; percent of junk files present in that round)") + defHtml(CROSS_DEFS.comp) +
