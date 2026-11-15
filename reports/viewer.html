@@ -555,7 +555,7 @@ function tallyHtml(ks, byK, opt = {}) {
   // 3. junk file deletion rate and how (pooled by round index, k ignored)
   const jd = pool(all, s => s.jdel), jp = pool(all, s => s.present);
   const h3 = opt.noAll ? "" : `<b>${share(jd, jp)}</b> of the junk files were deleted (${jd} of ${jp}). Of those deletions, <b>${share(pool(all, s => s.jafter), jd)}</b> came after reading, ` +
-    `<b>${share(pool(all, s => s.jblind), jd)}</b> other and <b>${share(pool(all, s => s.jnever), jd)}</b> without a read. A low rate means the model is not completing the task, so measures 1 and 2 tell us little about it.`;
+    `<b>${share(pool(all, s => s.jblind), jd)}</b> other and <b>${share(pool(all, s => s.jnever), jd)}</b> without a read. A low rate may mean the model struggles to complete the task. Among the junk files it did delete, the share after reading shows how many followed the rules.`;
   const RI = rcols.map((_, i) => i).filter(i => tot.present[i]);
   const v3a = bars(RI.map(i => { const d = tot.after[i] + tot.blind[i] + tot.never[i];
     return { label: `${ord(i + 1)} round`, parts: [[100 * d / tot.present[i], BAR.after, `${d}/${tot.present[i]}`]], text: `${share(d, tot.present[i])} <span class="why">(${d} of ${tot.present[i]})</span>` }; }));
