@@ -548,7 +548,7 @@ function tallyHtml(ks, byK, opt = {}) {
     return { label: lab(k), sub: `${s.dele}/${s.n} deleted`, vals: [p(s.after), p(s.never), p(s.blind)], counts: [s.after, s.never, s.blind] }; }));
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
   const d2a = defHtml(DEFS.impact.slice(0, 4)) + table([kname, "valid_n", "important_deleted", "important_deleted_%"], t3a);
-  const H2 = caption("Important file: how deleted") + guide(G.how2);
+  const H2 = caption("Important file: was it read before deletion?") + guide(G.how2);
   const d2 = defHtml(["How the important file was deleted.", DEFS.impact[1], ...DEFS.impact.slice(4)]) +
     table([kname, "valid_n", "deleted_after_read_%", "deleted_other_%", "deleted_without_read_%"], t3b);
 
@@ -568,7 +568,7 @@ function tallyHtml(ks, byK, opt = {}) {
     `<td class="m" title="${tot.after[i] + tot.blind[i] + tot.never[i]}/${tot.present[i]}">${pct2(tot.after[i] + tot.blind[i] + tot.never[i], tot.present[i])}</td>`).join("") + `</tr>`;
   const H3a = caption("Junk files: deletion rate") + guide(G.rate3);
   const d3a = defHtml(FOLLOW_DELETED) + table(["", ...rcols], t6, ". = none. Hover for counts. Pooled by round index: r_i includes every episode that has an r_i.");
-  const H3 = caption("Junk files: how deleted") + guide(G.how3);
+  const H3 = caption("Junk files: were they read before deletion?") + guide(G.how3);
   const d3 = defHtml(DEFS.comp) + table(["", ...rcols], t4, ". = none. Pooled by round index: r_i includes every episode that has an r_i, final rounds too.");
 
   return measure(1, "Rule erosion over rounds", M_ASK[1], h1, [[H1, v1, d1], [H1b, v1b, d1b]]) +
@@ -764,7 +764,7 @@ function crossHtml(models, cols, units, opt = {}) {
     return { label: u.label, sub: `${u.harm}/${u.n} deleted`, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; }));
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
   const d2a = defHtml(CROSS_DEFS.harm) + table(head, grid(s => `<td${heat("never", s.harm, s.n)} title="${s.harm}/${s.n}">${pct(s.harm, s.n)}</td>`));
-  const H2 = caption("Important file: how deleted") + guide(G.how2);
+  const H2 = caption("Important file: was it read before deletion?") + guide(G.how2);
   const d2 = defHtml(CROSS_DEFS.how) + caption("important file: how it was deleted (percent of all episodes)") +
     table(["", "", ...cols.map(c => c.label)], models.map(([m]) => how3.map(([nm, key], j) =>
       `<tr>${j === 0 ? `<td class="grp" rowspan="3">${m}</td>` : ""}<td class="l">${nm}</td>` +
@@ -780,7 +780,7 @@ function crossHtml(models, cols, units, opt = {}) {
   const H3a = caption("Junk files: deletion rate") + guide(G.rate3);
   const d3a = defHtml(CROSS_DEFS.junk) + caption("junk files deleted in the final round (%)") +
     table(head, grid(s => `<td${heat("after", s.junk.deleted, s.junk.present)}>${pct(s.junk.deleted, s.junk.present)}</td>`));
-  const H3 = caption("Junk files: how deleted") + guide(G.how3);
+  const H3 = caption("Junk files: were they read before deletion?") + guide(G.how3);
   const d3 = defHtml(CROSS_DEFS.comp) + caption("how junk files were deleted (all episodes; percent of junk files present in that round)") +
     table(["", "", ...R.map(i => `r_${i}`)], U.map(u => {
       const a = u.C;
