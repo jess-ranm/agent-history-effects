@@ -530,12 +530,12 @@ function tallyHtml(ks, byK, opt = {}) {
     fbN++;
     if (c.first === null) fbNever++; else fbCounts[c.first]++;
   }
-  const v1b = lineChart([[current]], rcols.map((_, i) => i), (m, i) => [fbCounts[i], fbN], "round of the first rule break",
+  const v1b = lineChart([[current]], rcols.map((_, i) => i), (m, i) => [fbCounts[i], fbN], "round where the agent first broke a rule",
     "Percent of valid runs whose first rule break was at each round",
-    `Percent of the ${fbN} valid runs (${later.length > 1 ? "sensitive file at the " + ord(later[0] + 1) + " to " + ord(later[later.length - 1] + 1) + " round, pooled" : lab(later[0])}) whose first rule break was at that round. Runs that never broke a rule are not plotted. Hover a point for the count.`);
-  const H1 = caption("Rule erosion");
+    `Percent of the ${fbN} valid runs (${later.length > 1 ? "sensitive file at the " + ord(later[0] + 1) + " to " + ord(later[later.length - 1] + 1) + " round, pooled" : lab(later[0])}) whose first rule break was at that round. Runs that never broke a rule are not plotted. Hover a point for the count.`, "% of valid runs", true);
+  const H1 = caption("Rule erosion times");
   const d1 = def("erosion") + table([kname, "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], t1);
-  const H1b = caption("first_broke_at");
+  const H1b = caption("At which round the agent starts breaking rules");
   const d1b = def("first") + table([kname, ...rcols, "valid_n"], t2, ". = zero.");
 
   // 2. important file
@@ -559,7 +559,7 @@ function tallyHtml(ks, byK, opt = {}) {
   const RI = rcols.map((_, i) => i).filter(i => tot.present[i]);
   const rate = key => lineChart([[current]], RI, (m, i) => [key(i), tot.present[i]], "round",
     "Percent of junk files deleted, per round",
-    "Percent of the junk files present in that round, pooled over every episode that has that round. Hover a point for the count.");
+    "Percent of the junk files present in that round, pooled over every episode that has that round. Hover a point for the count.", "% of junk files deleted", true);
   const v3a = rate(i => tot.after[i] + tot.blind[i] + tot.never[i]);
   const v3 = columns(RI.map(i => { const p = x => 100 * x / (tot.after[i] + tot.blind[i] + tot.never[i] || 1), d = tot.after[i] + tot.blind[i] + tot.never[i];
     return { label: `r_${i}`, sub: `${d}/${tot.present[i]} deleted`, vals: [p(tot.after[i]), p(tot.never[i]), p(tot.blind[i])], counts: [tot.after[i], tot.never[i], tot.blind[i]] }; }),
@@ -666,8 +666,8 @@ const MARKS = [(x, y, c) => `<circle cx="${x}" cy="${y}" r="4.5" fill="${c}" str
                (x, y, c) => `<path d="M${x} ${y - 6}L${x + 6} ${y}L${x} ${y + 6}L${x - 6} ${y}Z" fill="${c}" stroke="#fff" stroke-width="2"/>`];
 
 // line chart over rounds, one line per model; get(m, i) -> [count, total] for round index i
-function lineChart(models, R, get, xlabel, aria, note) {
-  const W = 640, H = 300, L = 46, T = 16, B = 40, Rt = 20;
+function lineChart(models, R, get, xlabel, aria, note, ylabel = "", hideLegend = false) {
+  const W = 640, H = 300, L = ylabel ? 62 : 46, T = 16, B = 40, Rt = 20;
   const pctOf = (m, i) => { const [a, n] = get(m, i); return n ? 100 * a / n : 0; };
   const top = Math.max(10, Math.ceil(Math.max(...models.flatMap(([m]) => R.map(i => pctOf(m, i)))) / 10) * 10);
   const X = i => L + (W - L - Rt) * (R.indexOf(i) / Math.max(1, R.length - 1));
@@ -678,6 +678,7 @@ function lineChart(models, R, get, xlabel, aria, note) {
          `<text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#66727f">${v}%</text>`;
   for (const i of R)
     g += `<text x="${X(i)}" y="${H - B + 20}" text-anchor="middle" font-size="12" fill="#66727f">r_${i}</text>`;
+  if (ylabel) g += `<text transform="translate(14 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle" font-size="11" fill="#66727f">${ylabel}</text>`;
   g += `<text x="${(L + W - Rt) / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="#66727f">${xlabel}</text>`;
   models.forEach(([m], j) => {
     const c = SERIES[j % SERIES.length], pts = R.filter(i => get(m, i)[1]).map(i => [X(i), Y(pctOf(m, i)), i]);
@@ -690,7 +691,7 @@ function lineChart(models, R, get, xlabel, aria, note) {
   });
   const legend = models.map(([m], j) =>
     `<span style="margin-right:1.2rem;white-space:nowrap"><svg width="16" height="14" viewBox="-8 -7 16 14" style="vertical-align:-2px">${MARKS[j % MARKS.length](0, 0, SERIES[j % SERIES.length])}</svg> ${m}</span>`).join("");
-  return `<div style="max-width:${W}px;margin:.4rem 0 .6rem"><div style="font-size:.85rem;margin-bottom:.2rem">${legend}</div>` +
+  return `<div style="max-width:${W}px;margin:.4rem 0 .6rem">${hideLegend ? "" : `<div style="font-size:.85rem;margin-bottom:.2rem">${legend}</div>`}` +
     `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${aria}">${g}</svg>` +
     `<p class="tablenote">${note}</p></div>`;
 }
@@ -743,16 +744,16 @@ function crossHtml(models, cols, units, opt = {}) {
       return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; }));
   const fbNote = "Percent of each row's valid runs whose first rule break was at that round. Runs that never broke a rule are not plotted. Hover a point for the count.";
   const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [e.broke[i], e.n]; },
-    "round of the first rule break", "Percent of valid runs whose first rule break was at each round", fbNote);
+    "round where the agent first broke a rule", "Percent of valid runs whose first rule break was at each round", fbNote, "% of valid runs");
   const v1b = opt.noCharts                                    // follow-ups: one chart per model, one line per arm
     ? [...new Set(E.filter(u => u.model).map(u => u.model))].map(m => caption(m) + fbLine(E.filter(u => u.model === m), "arm")).join("")
     : fbLine(E, "label");
-  const H1 = caption("Rule erosion" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled)" : ""));
+  const H1 = caption("Rule erosion times" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled)" : ""));
   const d1 = defHtml(CROSS_DEFS.erosion) + table([opt.pooled ? "model" : "model, arm", "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], E.map(u => {
       const e = u.e, early = e.broke[0], yes = e.n - early - e.never;
       return `<tr><td class="l">${u.label}</td><td>${e.all}</td><td>${e.n}</td><td>${early}</td><td>${pct(early, e.n)}</td>` +
         `<td>${yes}</td><td${heat("never", yes, e.n - early)}>${pct(yes, e.n - early)}</td></tr>`; }).join(""));
-  const H1b = caption("first_broke_at" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled by round index)" : ""));
+  const H1b = caption("At which round the agent starts breaking rules" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled by round index)" : ""));
   const d1b = defHtml(CROSS_DEFS.first) + table([opt.pooled ? "model" : "model, arm", ...R.map(i => `r_${i}`), "valid_n"], E.map(u =>
       `<tr><td class="l">${u.label}</td>${R.map(i => `<td>${u.e.broke[i] || "."}</td>`).join("")}<td>${u.e.n}</td></tr>`).join(""), ". = zero.");
 
