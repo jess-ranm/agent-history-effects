@@ -67,7 +67,7 @@
           align-items: center; margin: .2rem 0 .9rem; font-size: .88rem; }
   .bars .bl { text-align: right; color: var(--muted); }
   .bars .track { display: flex; height: 1.05rem; background: #edf0f4; border-radius: 3px; overflow: hidden; }
-  .bars .track i { display: block; height: 100%; border-right: 2px solid var(--panel); }
+  .bars .track i { display: block; height: 100%; border-right: 2px solid var(--panel); color: #fff; font: 600 .72rem/1.05rem var(--sans); text-align: center; overflow: hidden; }
   .bars .bv { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tablecap.sub { margin: .8rem 0 .2rem; font-size: .95rem; }
   .legend { display: flex; flex-wrap: wrap; gap: .2rem 1rem; font-size: .8rem; color: var(--muted); margin: 0 0 .3rem; }
@@ -363,8 +363,8 @@ const def = key => defHtml(DEFS[key]);
 const BAR = { after: "#2f7d5b", blind: "#e08a3c", never: "#b42318", erosion: "#b42318", del: "#1f5a96" };
 const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], text}]
   `<div class="bars">${rows.map(r =>
-    `<div class="bl">${r.label}</div><div class="track">${r.parts.map(([v, c, t]) =>
-      v > 0 ? `<i style="width:${v}%;background:${c}" title="${t || ""}"></i>` : "").join("")}</div>` +
+    `<div class="bl">${r.label}</div><div class="track">${r.parts.map(([v, c, t, lbl, tc]) =>
+      v > 0 ? `<i style="width:${v}%;background:${c}${tc ? ";color:" + tc : ""}" title="${t || ""}">${lbl && v >= 5 ? lbl : ""}</i>` : "").join("")}</div>` +
     `<div class="bv">${r.text}</div>`).join("")}</div>`;
 const legend = items => `<div class="legend">${items.map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join("")}</div>`;
 const measure = (n, title, ask, headline, visual, detail) =>
@@ -376,15 +376,16 @@ const M_ASK = {
   2: "Was the sensitive file deleted, and was it read first?",
   3: "How much of the junk did the agent delete, and did it read each file first? A low deletion rate means the model cannot complete the task (0.6B completes almost none), so measures 1 and 2 tell us little about it. How the junk was deleted shows how erosion starts forming, before the sensitive file ever appears."
 };
-const ROUND_COLORS = ["#f0c36a", "#e8a23c", "#dd7b2b", "#c94c24", "#a32a1f", "#751313"], NEVER_COLOR = "#cfd6de";
+const ROUND_COLORS = ["#5b7fa6", "#f2c14e", "#ec8b2e", "#d9531e", "#a8261c", "#6b0f1a"], NEVER_COLOR = "#d5dbe3", ROUND_TEXT = ["#fff", "#17212b", "#17212b", "#fff", "#fff", "#fff"];
 // stacked bar per row: share of valid runs by the round of their first rule break, plus "never broke"
 const breakBars = (rows, nr) => {            // rows: [{label, counts: [per round], never, n}]
   const cs = ROUND_COLORS;
   return `<div class="tablecap sub">When the first break happened (first_broke_at)</div>` +
-    legend([...Array.from({ length: nr }, (_, i) => [cs[i], `r_${i}`]), [NEVER_COLOR, "never broke"]]) +
+    legend([...Array.from({ length: nr }, (_, i) => [cs[i], i === 0 ? "r_0 (broke right away, not erosion)" : `r_${i}`]), [NEVER_COLOR, "never broke"]]) +
+    `<p class="tablenote" style="margin:0 0 .2rem">The number in each block is how many runs first broke a rule in that round.</p>` +
     bars(rows.map(r => ({ label: r.label,
-      parts: [...r.counts.map((c, i) => [r.n ? 100 * c / r.n : 0, cs[i], `first break at r_${i}: ${c}`]), [r.n ? 100 * r.never / r.n : 0, NEVER_COLOR, `never broke: ${r.never}`]],
-      text: `<span class="why">${r.counts.map((c, i) => c ? `r_${i}: ${c}` : "").filter(Boolean).join(", ")}${r.never ? (r.counts.some(Boolean) ? ", " : "") + `never: ${r.never}` : ""} (of ${r.n})</span>` })));
+      parts: [...r.counts.map((c, i) => [r.n ? 100 * c / r.n : 0, cs[i], `first break at r_${i}: ${c}`, c, ROUND_TEXT[i]]), [r.n ? 100 * r.never / r.n : 0, NEVER_COLOR, `never broke: ${r.never}`, r.never, "#17212b"]],
+      text: `<span class="why">${r.n - r.never} of ${r.n} broke a rule</span>` })));
 };
 // grouped column chart: one group per row, one column per outcome (percent of that row's episodes)
 const COLS2 = [["after reading", BAR.after], ["never read", BAR.never], ["other (lazy read)", BAR.blind]];
