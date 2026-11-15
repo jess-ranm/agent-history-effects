@@ -3,7 +3,7 @@
 Used by the Colab notebook:
 
     import serve
-    proc, log = serve.start_server("Qwen/Qwen3-1.7B", "qwen3-1.7b", 0, 8000, 32768, 0.90, "results")
+    proc, log = serve.start_server("Qwen/Qwen3-1.7B", "qwen3-1.7b", 0, 8000, 32768, 0.95, "results")
     serve.wait_for_server(proc, 8000, log)
 """
 import os
@@ -14,7 +14,7 @@ import urllib.request
 from pathlib import Path
 
 
-def start_server(hf_id, name, gpu=0, port=8000, max_len=32768, gpu_mem=0.90, log_dir="."):
+def start_server(hf_id, name, gpu=0, port=8000, max_len=32768, gpu_mem=0.95, log_dir="."):
     """Launch a vLLM OpenAI-compatible server for one model on one GPU; returns (process, log path)."""
     log = Path(log_dir) / f"vllm_gpu{gpu}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
