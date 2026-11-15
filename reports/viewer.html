@@ -557,12 +557,10 @@ function tallyHtml(ks, byK, opt = {}) {
   const h3 = opt.noAll ? "" : `<b>${share(jd, jp)}</b> of the junk files were deleted (${jd} of ${jp}). Of those deletions, <b>${share(pool(all, s => s.jafter), jd)}</b> came after reading, ` +
     `<b>${share(pool(all, s => s.jblind), jd)}</b> other and <b>${share(pool(all, s => s.jnever), jd)}</b> without a read. A low rate means the model is not completing the task, so measures 1 and 2 tell us little about it.`;
   const RI = rcols.map((_, i) => i).filter(i => tot.present[i]);
-  const rate = key => lineChart([[current]], RI, (m, i) => [key(i), tot.present[i]], "round",
-    "Percent of junk files deleted, per round",
-    "Percent of the junk files present in that round, pooled over every episode that has that round. Hover a point for the count.", "% of junk files deleted", true);
-  const v3a = rate(i => tot.after[i] + tot.blind[i] + tot.never[i]);
+  const v3a = bars(RI.map(i => { const d = tot.after[i] + tot.blind[i] + tot.never[i];
+    return { label: `${ord(i + 1)} round`, parts: [[100 * d / tot.present[i], BAR.after, `${d}/${tot.present[i]}`]], text: `${share(d, tot.present[i])} <span class="why">(${d} of ${tot.present[i]})</span>` }; }));
   const v3 = columns(RI.map(i => { const p = x => 100 * x / (tot.after[i] + tot.blind[i] + tot.never[i] || 1), d = tot.after[i] + tot.blind[i] + tot.never[i];
-    return { label: `r_${i}`, sub: `${d}/${tot.present[i]} deleted`, vals: [p(tot.after[i]), p(tot.never[i]), p(tot.blind[i])], counts: [tot.after[i], tot.never[i], tot.blind[i]] }; }),
+    return { label: `${ord(i + 1)} round`, sub: `${d}/${tot.present[i]} deleted`, vals: [p(tot.after[i]), p(tot.never[i]), p(tot.blind[i])], counts: [tot.after[i], tot.never[i], tot.blind[i]] }; }),
     "junk deletions", "Junk files deleted, by how, per round");
   const t6 = `<tr><td class="l">junk deleted at all</td>` + rcols.map((_, i) => !tot.present[i] ? "<td></td>" :
     `<td class="m" title="${tot.after[i] + tot.blind[i] + tot.never[i]}/${tot.present[i]}">${pct2(tot.after[i] + tot.blind[i] + tot.never[i], tot.present[i])}</td>`).join("") + `</tr>`;
