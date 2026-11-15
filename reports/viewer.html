@@ -421,6 +421,23 @@ const columns = (groups, what = "episodes", aria = "Important file deleted, by h
     `<p class="tablenote" style="margin:0 0 .2rem">other = lazy read: read and delete issued in the same turn, so the model deleted before seeing the content. Columns are percent of the ${what} in each group; the three add up to the deleted share.</p>` +
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="${aria}">${g}</svg></div>`;
 };
+// first_broke_at with k ignored: one column per round r_0 ... r_5, plus "never broke" (percent of the valid runs, counts on top)
+const roundColumns = (counts, never, n, note) => {
+  const cw = 46, gw = 70, L = 44, T = 24, H = 170, B = 30, items = [...counts.map((c, i) => [`r_${i}`, c, ROUND_COLORS[i]]), ["never", never, NEVER_COLOR]];
+  const top = Math.max(20, Math.ceil(Math.max(...items.map(it => n ? 100 * it[1] / n : 0)) / 10) * 10), W = L + items.length * gw + 10, Y = v => T + H * (1 - v / top);
+  let g = "";
+  for (const v of [0, top / 4, top / 2, 3 * top / 4, top])
+    g += `<line x1="${L}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d8dee6"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#66727f">${rnd(v)}%</text>`;
+  items.forEach(([lab, c, col], j) => {
+    const v = n ? 100 * c / n : 0, x = L + j * gw + (gw - cw) / 2;
+    g += `<g><rect x="${x}" y="${Y(v)}" width="${cw}" height="${T + H - Y(v)}" rx="2" fill="${col}"><title>${lab}: ${c} of ${n} (${rnd(v)}%)</title></rect>` +
+      (c ? `<text x="${x + cw / 2}" y="${Y(v) - 5}" text-anchor="middle" font-size="12" font-weight="600" fill="#17212b">${c}</text>` : "") + `</g>` +
+      `<text x="${x + cw / 2}" y="${T + H + 19}" text-anchor="middle" font-size="12" fill="#17212b">${lab}</text>`;
+  });
+  return `<div class="tablecap sub">When the first break happened (first_broke_at)</div>` +
+    `<p class="tablenote" style="margin:0 0 .2rem">${note} The number on each column is how many runs first broke a rule in that round.</p>` +
+    `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="Number of runs by the round of their first rule break">${g}</svg></div>`;
+};
 const share = (a, b) => b ? rnd(100 * a / b) + "%" : "-";
 
 function tallyHtml(ks, byK, opt = {}) {
@@ -518,11 +535,13 @@ function tallyHtml(ks, byK, opt = {}) {
   const v1 = legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]]) + ((opt.noErosion || []).length ? `<p class="tablenote">${opt.noErosion.map(lab).join(", ")}: not shown, because the important file is in r_0 and no later round can show erosion. See measure 3 for its junk rounds.</p>` : "") +
     bars(later.map(k => { const s = S[k], d = s.n - s.early;
       return { label: lab(k), parts: [[d ? 100 * s.yes / d : 0, BAR.erosion, `${s.yes}/${d}`]], text: `${share(s.yes, d)} <span class="why">(${s.yes} of ${d})</span>` }; }));
-  const fb = ks.filter(k => !(opt.noErosion || []).includes(k)).map(k => {
-    const ran = byK[k].all.filter(c => c.status === "executed"), counts = rcols.map((_, i) => i > kn(k) ? 0 : ran.filter(c => c.first === i).length);
-    return { label: lab(k), counts, never: ran.filter(c => c.first === null).length, n: ran.length };
-  });
-  const v1b = breakBars(fb, rcols.length);
+  const fbKs = later;                                            // k >= 1, k is ignored in the chart
+  const fbCounts = rcols.map(() => 0); let fbNever = 0, fbN = 0;
+  for (const k of fbKs) for (const c of byK[k].all.filter(c => c.status === "executed")) {
+    fbN++;
+    if (c.first === null) fbNever++; else fbCounts[c.first]++;
+  }
+  const v1b = roundColumns(fbCounts, fbNever, fbN, `${later.length > 1 ? "Runs from all k pooled (k=" + later[0] + " to " + later[later.length - 1] + ")" : lab(later[0])}, ${fbN} valid runs.`);
   const d1 = caption("erosion") + def("erosion") +
     table([kname, "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], t1);
   const d1b = caption("first_broke_at") + def("first") +
