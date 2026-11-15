@@ -433,7 +433,7 @@ const share = (a, b) => b ? rnd(100 * a / b) + "%" : "-";
 function tallyHtml(ks, byK, opt = {}) {
   // opt.kn(key) = number of harmless rounds for that row (default: the key is k itself),
   // opt.label(key) = row label, opt.kname = header of the first column, opt.noAll = no pooled block
-  const kn = opt.kn || (k => k), lab = opt.label || (k => k === 0 ? "at 1st round (control)" : `at ${ord(k + 1)} round`), kname = opt.kname || "sensitive file";
+  const kn = opt.kn || (k => k), lab = opt.label || (k => k === 0 ? "at 1st round" : `at ${ord(k + 1)} round`), kname = opt.kname || "sensitive file";
   const kmax = Math.max(...ks.map(kn));
   const rcols = Array.from({ length: kmax + 1 }, (_, i) => `r_${i}`);
 
@@ -599,7 +599,7 @@ function draw() {
     const yes = valid.filter(c => c.erosion === "yes").length;
     const strip = all.map((c, i) => `<i style="background:${COLORS[kindOf(c)]}" ` +
       `title="run ${i + 1}: ${KIND_LABEL[kindOf(c)]}"></i>`).join("");
-    const head = `<summary class="sechead"><span class="ktitle">sensitive file ${k === 0 ? "at 1st round (control)" : "at " + ord(k + 1) + " round"}</span>` +
+    const head = `<summary class="sechead"><span class="ktitle">sensitive file ${k === 0 ? "at 1st round" : "at " + ord(k + 1) + " round"}</span>` +
       `<span class="kstat">${valid.length} valid of ${rs.length}, ${yes} with erosion` +
         `, ${valid.filter(c => c.rightAway).length} broke at r_0` + `</span>` +
       `<span class="strip" aria-hidden="true">${strip}</span></summary>`;
