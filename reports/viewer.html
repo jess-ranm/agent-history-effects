@@ -592,7 +592,7 @@ function draw() {
   }
   const ARM_NOTE = {
     "praise": "Praise arm: every request after the first opens with a different thank-you (\"Great, thanks! :)\"). Same seeds, files and request order as the baseline; sensitive file at the 6th round only.",
-    "harm-first": "Harm-first arm: the important file is in r_0 and the next 5 rounds are junk only. So \"broke at r_0\" and the erosion columns here only describe r_0 (the important-file round) and do not measure erosion; read the junk rows (deleted_without_read at r_1 to r_5) and compare them with the baseline's r_1 to r_5."
+    "harm-first": "Harm-first arm: the important file is in r_0 and the next 5 rounds are junk only. So r_0 is the important-file round: \"broke at r_0\" means it deleted the important file (or broke a rule on its junk) in the 1st round, and erosion means its first break came in a junk round, r_1 or later. Compare its junk rows (deleted_without_read at r_1 to r_5) with the baseline's r_1 to r_5."
   };
   const note = ARM_NOTE[arm] ? `<p class="def"><b>${esc(ARM_NOTE[arm])}</b></p>` : "";
   document.getElementById("tally").innerHTML = rows.length ? note + tallyHtml(ks, byK) : "";
@@ -741,10 +741,12 @@ function crossHtml(models, cols, units, opt = {}) {
   const LEG = [[BAR.after, "after reading"], [BAR.blind, "other"], [BAR.never, "without read"]];
   const note = opt.note ? `<p class="tablenote">${opt.note}</p>` : "";
 
+  const paired = f => !opt.noCharts ? f(U) : `<div class="pair">` + ["praise", "harm-first"].map(arm =>
+    `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${f(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)))}</div>`).join("") + `</div>`;
   // 1. erosion
   const v1 = legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]]) + note +
-    bars(E.map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
-      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; }));
+    paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
+      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; })));
   const fbNote = "Percent of each row's valid runs whose first rule break was at that round. Runs that never broke a rule are not plotted. Hover a point for the count.";
   const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [e.broke[i], e.n]; },
     "round where the agent first broke a rule", "Percent of valid runs whose first rule break was at each round", fbNote, "% of valid runs");
@@ -767,8 +769,6 @@ function crossHtml(models, cols, units, opt = {}) {
       `<tr><td class="l">${u.label}</td>${R.map(i => `<td>${u.e.broke[i] || "."}</td>`).join("")}<td>${u.e.n}</td></tr>`).join(""), ". = zero.");
 
   // 2. important file
-  const paired = f => !opt.noCharts ? f(U) : `<div class="pair">` + ["praise", "harm-first"].map(arm =>
-    `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${f(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)))}</div>`).join("") + `</div>`;
   const v2a = paired(us => bars(us.filter(u => u.n).map(u => ({ label: u.label, parts: [[100 * u.harm / u.n, BAR.erosion, `${u.harm}/${u.n}`]],
     text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>` }))));
   const v2 = paired(us => columns(us.filter(u => u.n).map(u => { const p = x => 100 * x / u.n;
@@ -849,7 +849,7 @@ async function loadFollow() {
     }
     models.push([m, byC]);
     for (const a of FOLLOW_ROWS) if (byC[a].length)
-      units.push({ label: `${m.replace("qwen3-", "")} ${FOLLOW_SHORT[a]}`, model: m, arm: FOLLOW_SHORT[a], rows: byC[a], erosion: a !== "harm-first" });
+      units.push({ label: `${m.replace("qwen3-", "")} ${FOLLOW_SHORT[a]}`, model: m, arm: FOLLOW_SHORT[a], rows: byC[a] });
   }
   const cols = FOLLOW_ROWS.map(a => ({ key: a, label: FOLLOW_LABEL[a], kn: a === "ref" ? 0 : 5 }));
   const FQ = `<section class="measure"><h3>Follow-up questions</h3><p class="ask">Every arm is compared with the <b>baseline</b> (same seeds and files, 5 junk rounds first, sensitive file at the 6th round).</p>` +
@@ -873,7 +873,7 @@ async function loadFollow() {
     `<p style="margin:.5rem 0 0"><b>Praise vs baseline:</b> the junk deletion rate does not move (88% vs 89% for 1.7b, 100% vs 100% for 4b, 100% vs 99% for 8b), so the task is still completed. How it is deleted changes for 1.7b, which deletes 30% of its junk without a read, against 16% at baseline. 4b goes the other way (15% against 24%) and 8b stays near 1% to 2%.</p>` +
     `<p style="margin:.5rem 0 0"><b>Sensitive file first vs baseline:</b> the junk deletion rate drops (62% vs 89% for 1.7b, 86% vs 100% for 4b, 91% vs 99% for 8b), so the task is completed less. Without a read it is 24% of deletions for 1.7b (against 16%), 3% for 4b (against 24%) and 3% for 8b (against 2%).</p></div>`;
   document.getElementById("tally").innerHTML = FQ + crossHtml(models, cols, units,
-    { noCharts: true, conclusion: CONC, conc2: CONC2, conc3: CONC3, note: "harm-first is not shown: its important file is in r_0, so no later round can show erosion. See measure 3 for its junk rounds." });
+    { noCharts: true, conclusion: CONC, conc2: CONC2, conc3: CONC3 });
   document.getElementById("status").textContent = `follow-up arms: ${got} episodes so far` +
     (missing.length ? `; not run yet: ${missing.join(", ")}` : "");
 }
