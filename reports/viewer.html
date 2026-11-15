@@ -382,7 +382,7 @@ const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], te
       v > 0 ? `<i style="width:${v}%;background:${c}${tc ? ";color:" + tc : ""}" title="${t || ""}">${lbl && v >= 5 ? lbl : ""}</i>` : "").join("")}</div>` +
     `<div class="bv">${r.text}</div>`).join("")}</div>`;
 const legend = items => `<div class="legend">${items.map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join("")}</div>`;
-const measure = (n, title, ask, headline, blocks) =>      // blocks: [[header, graph, table]]: the header (title and column meanings) comes first, then the graph, then its table button
+const measure = (n, title, ask, headline, blocks) =>      // blocks: [[title, graph, table]]: the title comes first, then the graph, then its table button (column meanings sit inside it)
   `<section class="measure"><h3><span class="num">${n}</span>${title}</h3><p class="ask">${ask}</p>` +
   (headline ? `<p class="headline">${headline}</p>` : "") +
   blocks.map(([h, v, t]) => h + v + (t ? `<details class="more"><summary>show table</summary>${t}</details>` : "")).join("") + `</section>`;
@@ -542,10 +542,10 @@ function tallyHtml(ks, byK, opt = {}) {
     if (c.first === null) fbNever++; else fbCounts[c.first]++;
   }
   const v1b = roundColumns(fbCounts, fbNever, fbN, `${later.length > 1 ? "Sensitive file at rounds " + later[0] + " to " + later[later.length - 1] + ", pooled" : lab(later[0])}, ${fbN} valid runs.`);
-  const H1 = caption("Rule erosion") + def("erosion");
-  const d1 = table([kname, "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], t1);
-  const H1b = caption("first_broke_at") + def("first");
-  const d1b = table([kname, ...rcols, "never", "valid_n"], t2, ". = zero.");
+  const H1 = caption("Rule erosion");
+  const d1 = def("erosion") + table([kname, "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], t1);
+  const H1b = caption("first_broke_at");
+  const d1b = def("first") + table([kname, ...rcols, "never", "valid_n"], t2, ". = zero.");
 
   // 2. important file
   const dl = pool(all, s => s.dele), vn = pool(all, s => s.n);
@@ -553,8 +553,8 @@ function tallyHtml(ks, byK, opt = {}) {
     `${pool(all, s => s.after)} after reading it, ${pool(all, s => s.blind)} other, ${pool(all, s => s.never)} never read.`;
   const v2 = columns(all.filter(k => S[k].n).map(k => { const s = S[k], p = x => 100 * x / s.n;
     return { label: lab(k), sub: `${s.dele}/${s.n} deleted`, vals: [p(s.after), p(s.never), p(s.blind)], counts: [s.after, s.never, s.blind] }; }));
-  const H2 = caption("Important file: deleted, and how") + def("impact");
-  const d2 =     table([kname, "valid_n", "important_deleted", "important_deleted_%",
+  const H2 = caption("Important file: deleted, and how");
+  const d2 = def("impact") +     table([kname, "valid_n", "important_deleted", "important_deleted_%",
            "deleted_after_read_%", "deleted_other_%", "deleted_never_read_%"], t3);
 
   // 3. junk file deletion rate and how
@@ -566,8 +566,8 @@ function tallyHtml(ks, byK, opt = {}) {
     "junk files", "Junk files deleted, by how, per group");
   const t6 = ks.map(k => `<tr><td>${lab(k)}</td>` + rcols.map((_, i) => i > kn(k) || !perK[k].present[i] ? "<td></td>" :
     `<td class="m" title="${perK[k].after[i] + perK[k].blind[i] + perK[k].never[i]}/${perK[k].present[i]}">${pct2(perK[k].after[i] + perK[k].blind[i] + perK[k].never[i], perK[k].present[i])}</td>`).join("") + `</tr>`).join("");
-  const H3 = caption("Junk files: deleted, and how") + def("comp");
-  const d3 = caption("junk files deleted at all, by round (percent of junk files present)") + defHtml(FOLLOW_DELETED) +
+  const H3 = caption("Junk files: deleted, and how");
+  const d3 = def("comp") + caption("junk files deleted at all, by round (percent of junk files present)") + defHtml(FOLLOW_DELETED) +
     table([kname, ...rcols], t6, ". = none. Hover for counts.") +
     caption("how junk files were deleted (all episodes; percent of junk files present in that round)") +
     table(["", "", ...rcols], t4,
@@ -745,23 +745,23 @@ function crossHtml(models, cols, units, opt = {}) {
     bars(E.map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
       return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; }));
   const v1b = breakBars(E.map(u => ({ label: u.label, counts: R.map(i => u.e.broke[i]), never: u.e.never, n: u.e.n })), R.length);
-  const H1 = caption("Rule erosion" + (opt.pooled ? " (sensitive file at rounds 1 to 5, pooled)" : "")) + defHtml(CROSS_DEFS.erosion);
-  const d1 = table([opt.pooled ? "model" : "model, arm", "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], E.map(u => {
+  const H1 = caption("Rule erosion" + (opt.pooled ? " (sensitive file at rounds 1 to 5, pooled)" : ""));
+  const d1 = defHtml(CROSS_DEFS.erosion) + table([opt.pooled ? "model" : "model, arm", "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], E.map(u => {
       const e = u.e, early = e.broke[0], yes = e.n - early - e.never;
       return `<tr><td class="l">${u.label}</td><td>${e.all}</td><td>${e.n}</td><td>${early}</td><td>${pct(early, e.n)}</td>` +
         `<td>${yes}</td><td${heat("never", yes, e.n - early)}>${pct(yes, e.n - early)}</td></tr>`; }).join(""));
   const lines1 = (opt.noCharts ? "" : lineChart(E.map(u => [u.label]), R, (l, i) => { const e = E.find(u => u.label === l).e; return [e.broke[i], e.n]; }, "round of first rule break",
       "Percent of valid episodes whose first rule break was at each round",
       "Percent of each model's valid episodes (sensitive file at rounds 1 to 5), by the round of the first rule break. Episodes that never broke a rule are not plotted (see never in the table). Hover a point for the count."));
-  const H1b = caption("first_broke_at" + (opt.pooled ? " (sensitive file at rounds 1 to 5, pooled by round index)" : "")) + defHtml(CROSS_DEFS.first);
-  const d1b = table([opt.pooled ? "model" : "model, arm", ...R.map(i => `r_${i}`), "never", "valid_n"], E.map(u =>
+  const H1b = caption("first_broke_at" + (opt.pooled ? " (sensitive file at rounds 1 to 5, pooled by round index)" : ""));
+  const d1b = defHtml(CROSS_DEFS.first) + table([opt.pooled ? "model" : "model, arm", ...R.map(i => `r_${i}`), "never", "valid_n"], E.map(u =>
       `<tr><td class="l">${u.label}</td>${R.map(i => `<td>${u.e.broke[i] || "."}</td>`).join("")}<td>${u.e.never || "."}</td><td>${u.e.n}</td></tr>`).join(""), ". = zero.");
 
   // 2. important file
   const v2 = columns(U.filter(u => u.n).map(u => { const p = x => 100 * x / u.n;
     return { label: u.label, sub: `${u.harm}/${u.n} deleted`, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; }));
-  const H2 = caption("Important file: deleted, and how") + defHtml(CROSS_DEFS.harm) + defHtml(CROSS_DEFS.how);
-  const d2 = caption("important file deleted (all episodes)") +
+  const H2 = caption("Important file: deleted, and how");
+  const d2 = defHtml(CROSS_DEFS.harm) + defHtml(CROSS_DEFS.how) + caption("important file deleted (all episodes)") +
     table(head, grid(s => `<td${heat("never", s.harm, s.n)} title="${s.harm}/${s.n}">${pct(s.harm, s.n)}</td>`)) +
     caption("important file: how it was deleted (percent of all episodes)") +
     table(["", "", ...cols.map(c => c.label)], models.map(([m]) => how3.map(([nm, key], j) =>
@@ -773,8 +773,8 @@ function crossHtml(models, cols, units, opt = {}) {
   const v3 = columns(U.filter(u => u.jp).map(u => { const p = x => 100 * x / u.jp;
     return { label: u.label, sub: `${u.ja + u.jb + u.jn}/${u.jp} deleted`, vals: [p(u.ja), p(u.jn), p(u.jb)], counts: [u.ja, u.jn, u.jb] }; }),
     "junk files", "Junk files deleted, by how, per group");
-  const H3 = caption("Junk files: deleted, and how") + defHtml(CROSS_DEFS.junk) + defHtml(CROSS_DEFS.comp);
-  const d3 = caption("junk files deleted in the final round (%)") +
+  const H3 = caption("Junk files: deleted, and how");
+  const d3 = defHtml(CROSS_DEFS.junk) + defHtml(CROSS_DEFS.comp) + caption("junk files deleted in the final round (%)") +
     table(head, grid(s => `<td${heat("after", s.junk.deleted, s.junk.present)}>${pct(s.junk.deleted, s.junk.present)}</td>`)) +
     caption("how junk files were deleted (all episodes; percent of junk files present in that round)") +
     table(["", "", ...R.map(i => `r_${i}`)], U.map(u => {
