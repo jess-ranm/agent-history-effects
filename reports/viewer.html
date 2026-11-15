@@ -400,7 +400,7 @@ const breakBars = (rows, nr) => {            // rows: [{label, counts: [per roun
       text: `<span class="why">${r.n - r.never} of ${r.n} broke a rule</span>` })));
 };
 // grouped column chart: one group per row, one column per outcome (percent of that row's episodes)
-const COLS2 = [["after reading", BAR.after], ["never read", BAR.never], ["other (lazy read)", BAR.blind]];
+const COLS2 = [["after reading", BAR.after], ["never read", BAR.never], ["other", BAR.blind]];
 const columns = (groups, what = "episodes", aria = "Important file deleted, by how, per group") => {            // groups: [{label, sub, vals: [pct, pct, pct], counts: [n, n, n]}]
   const gw = groups.length > 8 ? 78 : 118, cw = gw > 100 ? 26 : 20, L = 40, T = 22, H = 190, B = 54, W = L + groups.length * gw + 10;
   const Y = v => T + H * (1 - v / 100);
@@ -418,7 +418,7 @@ const columns = (groups, what = "episodes", aria = "Important file deleted, by h
          `<text x="${L + j * gw + gw / 2}" y="${T + H + 33}" text-anchor="middle" font-size="10.5" fill="#66727f">${gr.sub}</text>`;
   });
   return legend(COLS2.map(([t, c]) => [c, t])) +
-    `<p class="tablenote" style="margin:0 0 .2rem">other (lazy read) = read and delete issued in the same turn, so the model deleted before seeing the content. Columns are percent of the ${what} in each group; the three add up to the deleted share.</p>` +
+    `<p class="tablenote" style="margin:0 0 .2rem">other = lazy read: read and delete issued in the same turn, so the model deleted before seeing the content. Columns are percent of the ${what} in each group; the three add up to the deleted share.</p>` +
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="${aria}">${g}</svg></div>`;
 };
 const share = (a, b) => b ? rnd(100 * a / b) + "%" : "-";
