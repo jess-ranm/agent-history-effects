@@ -416,6 +416,28 @@ const columns = (groups, what = "episodes", aria = "Important file deleted, by h
       parts: gr.vals.map((v, i) => [v, COLS2[i][1], `${gr.label}, ${COLS2[i][0]}: ${gr.counts[i]} (${rnd(v)}%)`, v >= 15 ? rnd(v) + "%" : "", TC[i]]),
       text: `<span class="why">${gr.sub}</span>` })));
 };
+// follow-ups: per model, a baseline column next to the follow-up column (two colours)
+const DUO = ["#6f8fb5", "#d9531e"];
+const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or null
+  const models = [...new Set(us.map(u => u.model))], arm = (us.find(u => u.arm !== "baseline") || {}).arm || "";
+  const gw = 150, cw = 38, L = 40, T = 22, H = 170, B = 30, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
+  let g = "";
+  for (const v of [0, 25, 50, 75, 100])
+    g += `<line x1="${L}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d8dee6"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#66727f">${v}%</text>`;
+  models.forEach((m, j) => {
+    const x0 = L + j * gw + (gw - 2 * cw - 6) / 2;
+    ["baseline", arm].forEach((a, i) => {
+      const u = us.find(u => u.model === m && u.arm === a), r = u && fn(u);
+      if (!r) return;
+      const x = x0 + i * (cw + 6), y = Y(r.v);
+      g += `<g><rect x="${x}" y="${y}" width="${cw}" height="${Math.max(0, T + H - y)}" rx="2" fill="${DUO[i]}"><title>${m} ${a}: ${r.tip}</title></rect>` +
+        `<text x="${x + cw / 2}" y="${y - 4}" text-anchor="middle" font-size="11" fill="#17212b">${rnd(r.v)}%</text></g>`;
+    });
+    g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 18}" text-anchor="middle" font-size="12.5" fill="#17212b">${m.replace("qwen3-", "")}</text>`;
+  });
+  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) +
+    `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="baseline vs ${arm}">${g}</svg></div>`;
+};
 const G = { rate2: "Lower is better: the important file should not be deleted, so a low rate means the agent follows the rules.",
   how2: "After reading: higher is better (follows the read-first rule). Without read: lower is better (breaks the rule). Other: read and delete in the same turn.",
   rate3: "Higher is better: the junk should be deleted, so a high rate means the agent completes the task.",
@@ -733,12 +755,13 @@ function crossHtml(models, cols, units, opt = {}) {
   const LEG = [[BAR.after, "after reading"], [BAR.blind, "other"], [BAR.never, "without read"]];
   const note = opt.note ? `<p class="tablenote">${opt.note}</p>` : "";
 
-  const paired = f => !opt.noCharts ? f(U) : `<div class="pair">` + ["praise", SF].map(arm =>
-    `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${f(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)))}</div>`).join("") + `</div>`;
+  const paired = (f, fn) => !opt.noCharts ? f(U) : `<div class="pair">` + ["praise", SF].map(arm =>
+    `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${(fn ? duoChart : f)(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn)}</div>`).join("") + `</div>`;
   // 1. erosion
-  const v1 = legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]]) + note +
+  const v1 = (opt.noCharts ? "" : legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]])) + note +
     paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
-      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; })));
+      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; })),
+    u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, tip: `${yes}/${d} broke after a clean start` } : null; });
   const cum = (e, i) => R.filter(j => j <= i).reduce((a, j) => a + e.broke[j], 0);
   const fbNote = "Cumulative: percent of each row's valid runs that had broken a rule by the end of that round. The curve only rises; where it levels off is the total break rate, and the gap below 100% is the runs that never broke. Hover a point for the count.";
   const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [cum(e, i), e.n]; },
@@ -763,7 +786,8 @@ function crossHtml(models, cols, units, opt = {}) {
 
   // 2. important file
   const v2a = paired(us => bars(us.filter(u => u.n).map(u => ({ label: u.label, parts: [[100 * u.harm / u.n, BAR.erosion, `${u.harm}/${u.n}`]],
-    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>` }))));
+    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>` })),
+    u => u.n ? { v: 100 * u.harm / u.n, tip: `${u.harm}/${u.n} deleted` } : null));
   const v2 = paired(us => columns(us.filter(u => u.n).map(u => { const p = x => 100 * x / u.n;
     return { label: u.label, sub: `${u.harm}/${u.n} deleted`, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; })));
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
@@ -780,7 +804,8 @@ function crossHtml(models, cols, units, opt = {}) {
     return { label: u.label, sub: `${d}/${u.jp} deleted`, vals: [p(u.ja), p(u.jn), p(u.jb)], counts: [u.ja, u.jn, u.jb] }; }),
     "junk deletions", "Junk files deleted, by how, per group"));
   const v3a = paired(us => bars(us.filter(u => u.jp).map(u => { const d = u.ja + u.jb + u.jn;
-    return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], text: `${share(d, u.jp)} <span class="why">(${d} of ${u.jp})</span>` }; })));
+    return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], text: `${share(d, u.jp)} <span class="why">(${d} of ${u.jp})</span>` }; })),
+    u => u.jp ? { v: 100 * (u.ja + u.jb + u.jn) / u.jp, tip: `${u.ja + u.jb + u.jn}/${u.jp} junk files deleted` } : null);
   const H3a = caption("Junk files: deletion rate") + guide(G.rate3);
   const d3a = defHtml(CROSS_DEFS.junk) + caption("junk files deleted in the final round (%)") +
     table(head, grid(s => `<td${heat("after", s.junk.deleted, s.junk.present)}>${pct(s.junk.deleted, s.junk.present)}</td>`));
