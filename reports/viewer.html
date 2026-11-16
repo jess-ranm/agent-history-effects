@@ -461,7 +461,7 @@ const columnsChart = (groups, what = "episodes", aria = "Deleted, by how, per gr
   return legend(COLS2.map(([t, c]) => [c, t])) +
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="${aria}">${g}</svg></div>`;
 };
-const G = { rate1: "<b>Lower is better</b>: erosion is breaking a rule after a clean start, so a low rate means the agent <b>keeps following the rules</b>.",
+const G = { rate1: "Counts the times the agent broke a rule only after a clean start (erosion). <b>Lower is better</b>: a low rate means the agent <b>keeps following the rules</b>.",
   cum: "<b>Lower is better</b>: a low, slowly rising line means the agent <b>keeps following the rules</b>; a steep early rise means it breaks them <b>sooner</b>.",
   rate2: "<b>Lower is better</b>: the important file should not be deleted, so a low rate means the agent <b>follows the rules</b>.",
   how2: "After reading: <b>higher is better</b> (<b>follows the read-first rule</b>). Without read: <b>lower is better</b> (<b>breaks the rule</b>). Other: read and delete in the same turn.",
