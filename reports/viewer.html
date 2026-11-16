@@ -523,13 +523,17 @@ function tallyHtml(ks, byK, opt = {}) {
     fbN++;
     if (c.first === null) fbNever++; else fbCounts[c.first]++;
   }
-  const v1b = lineChart([[current]], rcols.map((_, i) => i), (m, i) => [fbCounts[i], fbN], "round where the agent first broke a rule",
-    "Percent of valid runs whose first rule break was at each round",
-    `Percent of the ${fbN} valid runs (${later.length > 1 ? "sensitive file at the " + ord(later[0] + 1) + " to " + ord(later[later.length - 1] + 1) + " round, pooled" : lab(later[0])}) whose first rule break was at that round. Runs that never broke a rule are not plotted. Hover a point for the count.`, "% of valid runs", true);
+  const v1b = lineChart([[current]], rcols.map((_, i) => i), (m, i) => [fbCounts.slice(0, i + 1).reduce((a, b) => a + b, 0), fbN], "round",
+    "Percent of valid runs that had broken a rule by each round (cumulative)",
+    `Percent of the ${fbN} valid runs (${later.length > 1 ? "sensitive file at the " + ord(later[0] + 1) + " to " + ord(later[later.length - 1] + 1) + " round, pooled" : lab(later[0])}) that had broken a rule by the end of that round (cumulative). The curve only rises; where it levels off is the total break rate, and the gap below 100% is the runs that never broke. Hover a point for the count.`, "% broken by this round", true);
   const H1 = caption("Rule erosion times");
   const d1 = def("erosion") + table([kname, "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], t1);
   const H1b = caption("At which round the agent starts breaking rules");
-  const d1b = def("first") + table([kname, ...rcols, "valid_n"], t2, ". = zero.");
+  const d1b = caption("share of valid runs by the round of their first rule break (the concentration)") +
+    bars([...rcols.map((_, i) => ({ label: `r_${i}`, parts: [[fbN ? 100 * fbCounts[i] / fbN : 0, ROUND_COLORS[i], `${fbCounts[i]}/${fbN}`]],
+      text: `${share(fbCounts[i], fbN)} <span class="why">(${fbCounts[i]} of ${fbN})</span>` })),
+      { label: "never broke", parts: [[fbN ? 100 * fbNever / fbN : 0, NEVER_COLOR, `${fbNever}/${fbN}`]], text: `${share(fbNever, fbN)} <span class="why">(${fbNever} of ${fbN})</span>` }]) +
+    def("first") + table([kname, ...rcols, "valid_n"], t2, ". = zero.");
 
   // 2. important file
   const dl = pool(all, s => s.dele), vn = pool(all, s => s.n);
@@ -735,16 +739,17 @@ function crossHtml(models, cols, units, opt = {}) {
   const v1 = legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]]) + note +
     paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
       return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; })));
-  const fbNote = "Percent of each row's valid runs whose first rule break was at that round. Runs that never broke a rule are not plotted. Hover a point for the count.";
-  const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [e.broke[i], e.n]; },
-    "round where the agent first broke a rule", "Percent of valid runs whose first rule break was at each round", fbNote, "% of valid runs");
+  const cum = (e, i) => R.filter(j => j <= i).reduce((a, j) => a + e.broke[j], 0);
+  const fbNote = "Cumulative: percent of each row's valid runs that had broken a rule by the end of that round. The curve only rises; where it levels off is the total break rate, and the gap below 100% is the runs that never broke. Hover a point for the count.";
+  const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [cum(e, i), e.n]; },
+    "round", "Percent of valid runs that had broken a rule by each round (cumulative)", fbNote, "% broken by this round");
   const pairs = () => [...new Set(U.filter(u => u.model).map(u => u.model))].map(m => {      // follow-ups: per model, praise vs baseline and harm-first vs baseline side by side
     const base = U.find(u => u.model === m && u.arm === "baseline");
     const one = arm => { const o = U.find(u => u.model === m && u.arm === arm);
       return base && o ? `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>` + lineChart([[base.arm], [o.arm]], R,
-        (l, i) => { const e = (l === "baseline" ? base : o).e; return [e.broke[i], e.n]; },
-        arm === SF ? "round where the agent first broke a rule (r_0 = the sensitive-file round for sensitive-file first)" : "round where the agent first broke a rule",
-        `Percent of valid runs whose first rule break was at each round, ${arm} vs baseline`, fbNote, "% of valid runs") + `</div>` : ""; };
+        (l, i) => { const e = (l === "baseline" ? base : o).e; return [cum(e, i), e.n]; },
+        arm === SF ? "round (for sensitive-file first, r_0 is the sensitive-file round)" : "round",
+        `Percent of valid runs that had broken a rule by each round, ${arm} vs baseline`, fbNote, "% broken by this round") + `</div>` : ""; };
     return caption(m) + `<div class="pair">${one("praise")}${one(SF)}</div>`; }).join("") ;
   const v1b = opt.noCharts ? pairs() : fbLine(E, "label");
   const H1 = caption("Rule erosion times" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled)" : ""));
