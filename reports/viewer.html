@@ -70,8 +70,11 @@
   .bars { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(10rem, 26rem) auto; gap: .3rem .7rem;
           align-items: center; margin: .2rem 0 .9rem; font-size: .88rem; }
   .bars .bl { text-align: right; color: var(--muted); }
-  .bars .track { display: flex; height: 1.05rem; background: #edf0f4; border-radius: 3px; overflow: hidden; }
+  .bars .track { position: relative; display: flex; height: 1.05rem; background: #edf0f4; border-radius: 3px; overflow: hidden; }
   .bars .track i { display: block; height: 100%; border-right: 2px solid var(--panel); color: #fff; font: 600 .72rem/1.05rem var(--sans); text-align: center; overflow: hidden; }
+  .bars .whisk { position: absolute; top: 50%; height: 2px; margin-top: -1px; background: #17212b; box-shadow: 0 0 0 1px #fff; min-width: 2px; }
+  .bars .whisk::before, .bars .whisk::after { content: ""; position: absolute; top: -4px; width: 2px; height: 10px; background: #17212b; box-shadow: 0 0 0 1px #fff; }
+  .bars .whisk::before { left: 0; } .bars .whisk::after { right: 0; }
   .bars .bv { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tablecap.sub { margin: .8rem 0 .2rem; font-size: .95rem; }
   .legend { display: flex; flex-wrap: wrap; gap: .2rem 1rem; font-size: .8rem; color: var(--muted); margin: 0 0 .3rem; }
@@ -386,10 +389,15 @@ const def = key => defHtml(DEFS[key]);
 
 // ---- the four measures, in the order of the write-up ----
 const BAR = { after: "#2f7d5b", blind: "#e08a3c", never: "#b42318", erosion: "#b42318", del: "#1f5a96" };
-const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], text}]
+// 95% Wilson score interval (percent), the same one multiturn/ci.py uses
+const wilson = (x, n) => { if (!n) return null; const z = 1.96, p = x / n, d = 1 + z * z / n, c = p + z * z / (2 * n), h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n));
+  return [100 * Math.max(0, (c - h) / d), 100 * Math.min(1, (c + h) / d)]; };
+const ciTxt = (x, n) => { const w = wilson(x, n); return w ? ` <span class="why ci" title="95% Wilson interval">[${Math.round(w[0])}, ${Math.round(w[1])}]</span>` : ""; };
+const whisk = (x, n) => { const w = wilson(x, n); return w ? `<b class="whisk" style="left:${w[0]}%;width:${w[1] - w[0]}%" title="95% Wilson interval ${Math.round(w[0])}\u2013${Math.round(w[1])}%"></b>` : ""; };
+const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], text, ci: [x, n]}]
   `<div class="bars">${rows.map(r =>
     `<div class="bl">${r.label}</div><div class="track">${r.parts.map(([v, c, t, lbl, tc]) =>
-      v > 0 ? `<i style="width:${v}%;background:${c}${tc ? ";color:" + tc : ""}" title="${t || ""}">${lbl && v >= 5 ? lbl : ""}</i>` : "").join("")}</div>` +
+      v > 0 ? `<i style="width:${v}%;background:${c}${tc ? ";color:" + tc : ""}" title="${t || ""}">${lbl && v >= 5 ? lbl : ""}</i>` : "").join("")}${r.ci ? whisk(...r.ci) : ""}</div>` +
     `<div class="bv">${r.text}</div>`).join("")}</div>`;
 const legend = items => `<div class="legend">${items.map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join("")}</div>`;
 const measure = (n, title, ask, headline, blocks) =>      // blocks: [[title, graph, table]]: the title comes first, then the graph, then its table button (column meanings sit inside it)
@@ -433,9 +441,10 @@ const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or nul
     ["baseline", arm].forEach((a, i) => {
       const u = us.find(u => u.model === m && u.arm === a), r = u && fn(u);
       if (!r) return;
-      const x = x0 + i * (cw + 6), y = Y(r.v);
+      const x = x0 + i * (cw + 6), y = Y(r.v), w = r.ci && wilson(...r.ci), cx = x + cw / 2;
+      if (w) g += `<g stroke="#17212b" stroke-width="1.6"><line x1="${cx}" x2="${cx}" y1="${Y(w[0])}" y2="${Y(w[1])}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(w[0])}" y2="${Y(w[0])}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(w[1])}" y2="${Y(w[1])}"/></g>`;
       g += `<g><rect x="${x}" y="${y}" width="${cw}" height="${Math.max(0, T + H - y)}" rx="2" fill="${DUO[i]}"><title>${m} ${a}: ${r.tip}</title></rect>` +
-        `<text x="${x + cw / 2}" y="${y - 4}" text-anchor="middle" font-size="11" fill="#17212b">${rnd(r.v)}%</text></g>`;
+        `<text x="${cx}" y="${(w ? Y(w[1]) : y) - 4}" text-anchor="middle" font-size="11" fill="#17212b">${rnd(r.v)}%</text></g>`;
     });
     g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 18}" text-anchor="middle" font-size="12.5" fill="#17212b">${m.replace("qwen3-", "")}</text>`;
   });
@@ -584,7 +593,7 @@ function tallyHtml(ks, byK, opt = {}) {
   const h1 = opt.noAll ? "" : `Of <b>${c1}</b> valid runs that followed the rules in their first round, <b>${e1}</b> (<b>${share(e1, c1)}</b>) broke a rule in a later round.`;
   const v1 = legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]]) + ((opt.noErosion || []).length ? `<p class="tablenote">${opt.noErosion.map(lab).join(", ")}: not shown, because the important file is in r_0 and no later round can show erosion. See measure 3 for its junk rounds.</p>` : "") +
     bars(later.map(k => { const s = S[k], d = s.n - s.early;
-      return { label: lab(k), parts: [[d ? 100 * s.yes / d : 0, BAR.erosion, `${s.yes}/${d}`]], text: `${share(s.yes, d)} <span class="why">(${s.yes} of ${d})</span>` }; }));
+      return { label: lab(k), parts: [[d ? 100 * s.yes / d : 0, BAR.erosion, `${s.yes}/${d}`]], ci: [s.yes, d], text: `${share(s.yes, d)} <span class="why">(${s.yes} of ${d})</span>${ciTxt(s.yes, d)}` }; }));
   const fbKs = later;                                            // k >= 1, k is ignored in the chart
   const fbCounts = rcols.map(() => 0); let fbNever = 0, fbN = 0;
   for (const k of fbKs) for (const c of byK[k].all.filter(c => c.status === "executed")) {
@@ -608,7 +617,7 @@ function tallyHtml(ks, byK, opt = {}) {
   const h2 = opt.noAll ? "" : `The important file was deleted in <b>${dl}</b> of <b>${vn}</b> valid runs (<b>${share(dl, vn)}</b>): ` +
     `${pool(all, s => s.after)} after reading it, ${pool(all, s => s.blind)} other, ${pool(all, s => s.never)} without a read.`;
   const v2a = bars(all.filter(k => S[k].n).map(k => { const s = S[k];
-    return { label: lab(k), parts: [[100 * s.dele / s.n, BAR.erosion, `${s.dele}/${s.n}`]], text: `${share(s.dele, s.n)} <span class="why">(${s.dele} of ${s.n})</span>` }; }));
+    return { label: lab(k), parts: [[100 * s.dele / s.n, BAR.erosion, `${s.dele}/${s.n}`]], ci: [s.dele, s.n], text: `${share(s.dele, s.n)} <span class="why">(${s.dele} of ${s.n})</span>${ciTxt(s.dele, s.n)}` }; }));
   const v2 = columns(all.filter(k => S[k].n).map(k => { const s = S[k], p = x => 100 * x / s.n;
     return { label: lab(k), sub: `${s.dele}/${s.n} deleted`, vals: [p(s.after), p(s.never), p(s.blind)], counts: [s.after, s.never, s.blind] }; }));
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
@@ -623,7 +632,7 @@ function tallyHtml(ks, byK, opt = {}) {
     `<b>${share(pool(all, s => s.jblind), jd)}</b> other and <b>${share(pool(all, s => s.jnever), jd)}</b> without a read. A low rate may mean the model struggles to complete the task. Among the junk files it did delete, the share after reading shows how many followed the rules.`;
   const RI = rcols.map((_, i) => i).filter(i => tot.present[i]);
   const v3a = bars(RI.map(i => { const d = tot.after[i] + tot.blind[i] + tot.never[i];
-    return { label: `${ord(i + 1)} round`, parts: [[100 * d / tot.present[i], BAR.after, `${d}/${tot.present[i]}`]], text: `${share(d, tot.present[i])} <span class="why">(${d} of ${tot.present[i]})</span>` }; }));
+    return { label: `${ord(i + 1)} round`, parts: [[100 * d / tot.present[i], BAR.after, `${d}/${tot.present[i]}`]], ci: [d, tot.present[i]], text: `${share(d, tot.present[i])} <span class="why">(${d} of ${tot.present[i]})</span>${ciTxt(d, tot.present[i])}` }; }));
   const v3 = columns(RI.map(i => { const p = x => 100 * x / (tot.after[i] + tot.blind[i] + tot.never[i] || 1), d = tot.after[i] + tot.blind[i] + tot.never[i];
     return { label: `${ord(i + 1)} round`, sub: `${d}/${tot.present[i]} deleted`, vals: [p(tot.after[i]), p(tot.never[i]), p(tot.blind[i])], counts: [tot.after[i], tot.never[i], tot.blind[i]] }; }),
     "junk deletions", "Junk files deleted, by how, per round");
@@ -807,8 +816,8 @@ function crossHtml(models, cols, units, opt = {}) {
   // 1. erosion
   const v1 = (opt.noCharts ? "" : legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]])) + note +
     paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
-      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; })),
-    u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, tip: `${yes}/${d} broke after a clean start` } : null; });
+      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], ci: [yes, d], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>${ciTxt(yes, d)}` }; })),
+    u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, ci: [yes, d], tip: `${yes}/${d} broke after a clean start` } : null; });
   const cum = (e, i) => R.filter(j => j <= i).reduce((a, j) => a + e.broke[j], 0);
   const fbNote = "Cumulative: % of valid runs that have broken a rule by that round.";
   const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [cum(e, i), e.n]; },
@@ -838,9 +847,9 @@ function crossHtml(models, cols, units, opt = {}) {
       `<tr><td class="l">${u.label}</td>${R.map(i => `<td>${u.e.broke[i] || "."}</td>`).join("")}<td>${u.e.n}</td></tr>`).join(""), ". = zero.");
 
   // 2. important file
-  const v2a = paired(us => bars(us.filter(u => u.n).map(u => ({ label: u.label, parts: [[100 * u.harm / u.n, BAR.erosion, `${u.harm}/${u.n}`]],
-    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>` }))),
-    u => u.n ? { v: 100 * u.harm / u.n, tip: `${u.harm}/${u.n} deleted` } : null);
+  const v2a = paired(us => bars(us.filter(u => u.n).map(u => ({ label: u.label, parts: [[100 * u.harm / u.n, BAR.erosion, `${u.harm}/${u.n}`]], ci: [u.harm, u.n],
+    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>${ciTxt(u.harm, u.n)}` }))),
+    u => u.n ? { v: 100 * u.harm / u.n, ci: [u.harm, u.n], tip: `${u.harm}/${u.n} deleted` } : null);
   const v2 = paired(us => (opt.noCharts ? columns : columnsChart)(us.filter(u => u.n).map(u => { const p = x => 100 * x / u.n;
     return { label: u.label, sub: `${u.harm}/${u.n} deleted`, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; })),
     u => u.n ? [[u.after], [u.never], [u.blind]].map(([c]) => ({ v: 100 * c / u.n, tip: `${c}/${u.n}` })) : null, ["read first", "no read", "other"]);
@@ -859,8 +868,8 @@ function crossHtml(models, cols, units, opt = {}) {
     "junk deletions", "Junk files deleted, by how, per group"),
     u => { const d = u.ja + u.jb + u.jn; return u.jp && d ? [u.ja, u.jn, u.jb].map(c => ({ v: 100 * c / d, tip: `${c}/${d}` })) : null; }, ["read first", "no read", "other"]);
   const v3a = paired(us => bars(us.filter(u => u.jp).map(u => { const d = u.ja + u.jb + u.jn;
-    return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], text: `${share(d, u.jp)} <span class="why">(${d} of ${u.jp})</span>` }; })),
-    u => u.jp ? { v: 100 * (u.ja + u.jb + u.jn) / u.jp, tip: `${u.ja + u.jb + u.jn}/${u.jp} junk files deleted` } : null);
+    return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], ci: [d, u.jp], text: `${share(d, u.jp)} <span class="why">(${d} of ${u.jp})</span>${ciTxt(d, u.jp)}` }; })),
+    u => u.jp ? { v: 100 * (u.ja + u.jb + u.jn) / u.jp, ci: [u.ja + u.jb + u.jn, u.jp], tip: `${u.ja + u.jb + u.jn}/${u.jp} junk files deleted` } : null);
   const H3a = caption("Junk files: deletion rate") + guide(G.rate3);
   const d3a = defHtml(CROSS_DEFS.junk) + caption("junk files deleted in the final round (%)") +
     table(head, grid(s => `<td${heat("after", s.junk.deleted, s.junk.present)}>${pct(s.junk.deleted, s.junk.present)}</td>`));
