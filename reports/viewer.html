@@ -970,8 +970,8 @@ async function loadFollow() {
     `<ul class="guide"><li><b>praise</b>: does a thank-you before every request after the first make the agent break the rules more than the baseline?</li>` +
     `<li><b>sensitive-file first</b>: when the sensitive file comes first, with no clean history, does the agent follow the rules, and do its junk rounds (r_1 to r_5) look like the baseline's?</li></ul></section>`;
   const conc = (a, b) => `<div class="conclusion"><ul><li><b>Praise:</b> ${a}</li><li><b>Sensitive file first:</b> ${b}</li></ul></div>`;
-  const CONC = conc("adding praise does break the rules earlier (1.7b), and breaks more in the later rounds (4b and 8b: the slope is much steeper, while the baseline line is more conservative).",
-                    "putting the sensitive file in the 1st round also delays breaking the rules and makes the agent break less often: it is more conservative.");
+  const CONC = conc("adding praise may make 4b break more often in the later rounds (p = 0.06), with no difference for 8b; no difference is statistically significant.",
+                    "putting the sensitive file in the 1st round may make agents more careful (flatter lines than baseline), but not significantly so (p > 0.5).");
   const CONC2 = conc("the sensitive file is deleted more only for 4b, and more often without reading for 1.7b and 4b.",
                      "deleted less for 1.7b and 8b, and almost always read first.");
   const CONC3 = conc("the junk is still deleted at the same rate. 1.7b skips reading more, 4b less.",
