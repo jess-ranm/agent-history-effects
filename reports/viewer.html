@@ -392,7 +392,8 @@ const BAR = { after: "#2f7d5b", blind: "#e08a3c", never: "#b42318", erosion: "#b
 // 95% Wilson score interval (percent), the same one multiturn/ci.py uses
 const wilson = (x, n) => { if (!n) return null; const z = 1.96, p = x / n, d = 1 + z * z / n, c = p + z * z / (2 * n), h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n));
   return [100 * Math.max(0, (c - h) / d), 100 * Math.min(1, (c + h) / d)]; };
-const ciTxt = (x, n) => { const w = wilson(x, n); return w ? ` <span class="why ci" title="95% Wilson interval">[${Math.round(w[0])}, ${Math.round(w[1])}]</span>` : ""; };
+const hw = w => Math.round((w[1] - w[0]) / 2);      // half-width of the interval, shown as +/-
+const ciTxt = (x, n) => { const w = wilson(x, n); return w ? ` <span class="why ci" title="95% Wilson interval ${Math.round(w[0])}\u2013${Math.round(w[1])}%">\u00b1 ${hw(w)}</span>` : ""; };
 // two-sided Fisher exact test (same rule as scipy): sum of table probabilities not larger than the observed one
 const fisherP = (a, n1, b, n2) => { if (n1 < 3 || n2 < 3) return null;
   const lf = [0]; for (let i = 1; i <= n1 + n2; i++) lf[i] = lf[i - 1] + Math.log(i);
@@ -401,7 +402,7 @@ const fisherP = (a, n1, b, n2) => { if (n1 < 3 || n2 < 3) return null;
   for (let x = Math.max(0, K - n2); x <= Math.min(n1, K); x++) { const v = lp(x); if (v <= obs + 1e-9) t += Math.exp(v); }
   return Math.min(1, t); };
 const pTxt = p => p === null ? "p n.a." : p < 0.001 ? "p < 0.001" : "p = " + (p < 0.1 ? p.toFixed(3) : p.toFixed(2));
-const pctCI = (x, n) => { const w = wilson(x, n); return n ? `${rnd(100 * x / n)}% [${Math.round(w[0])}, ${Math.round(w[1])}]` : ""; };
+const pctCI = (x, n) => { const w = wilson(x, n); return n ? `${rnd(100 * x / n)}% \u00b1 ${hw(w)}` : ""; };
 const whisk = (x, n) => { const w = wilson(x, n); return w ? `<b class="whisk" style="left:${w[0]}%;width:${w[1] - w[0]}%" title="95% Wilson interval ${Math.round(w[0])}\u2013${Math.round(w[1])}%"></b>` : ""; };
 const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], text, ci: [x, n]}]
   `<div class="bars">${rows.map(r =>
@@ -435,7 +436,7 @@ const columns = (groups, what = "episodes", aria = "Important file deleted, by h
   return legend(COLS2.map(([t, c]) => [c, t])) +
     bars(groups.map(gr => ({ label: gr.label,
       parts: gr.vals.map((v, i) => [v, COLS2[i][1], `${gr.label}, ${COLS2[i][0]}: ${gr.counts[i]} (${rnd(v)}%)`, v >= 15 ? rnd(v) + "%" : "", TC[i]]),
-      text: `<span class="why">${gr.sub}</span>` + (gr.n ? ` <span class="why ci">${gr.counts.map((c, i) => { const w = wilson(c, gr.n); return `${COLS2[i][0]} [${Math.round(w[0])}, ${Math.round(w[1])}]`; }).join(" \u00b7 ")}</span>` : "") })));
+      text: `<span class="why">${gr.sub}</span>` + (gr.n ? ` <span class="why ci">${gr.counts.map((c, i) => { const w = wilson(c, gr.n); return `${COLS2[i][0]} \u00b1 ${hw(w)}`; }).join(" \u00b7 ")}</span>` : "") })));
 };
 // follow-ups: per model, a baseline column next to the follow-up column (two colours)
 const DUO = ["#6f8fb5", "#d9531e"];
@@ -1039,7 +1040,7 @@ for (const m of [ALL, FOLLOW, ...MODELS]) {
   b.onclick = () => load(m);
   nav.appendChild(b);
 }
-load(MODELS[0]);
+load(ALL);
 </script>
 </body>
 </html>
