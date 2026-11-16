@@ -446,7 +446,7 @@ const DUO_NOTE = "Lines are 95% CIs.";
 const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or null
   const models = [...new Set(us.map(u => u.model))], arm = (us.find(u => u.arm !== "baseline") || {}).arm || "";
   const gw = 150, cw = 38, L = 40, T = 22, H = 170, B = 46, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
-  let g = "";
+  let g = "", quiet = false;
   for (const v of [0, 25, 50, 75, 100])
     g += `<line x1="${L}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d8dee6"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#66727f">${v}%</text>`;
   models.forEach((m, j) => {
@@ -454,6 +454,7 @@ const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or nul
     ["baseline", arm].forEach((a, i) => {
       const u = us.find(u => u.model === m && u.arm === a), r = u && fn(u);
       if (!r) return;
+      if (r.quiet) quiet = true;
       const x = x0 + i * (cw + 6), y = Y(r.v), w = r.ci && wilson(...r.ci), cx = x + cw / 2;
       if (w) g += `<g stroke="#17212b" stroke-width="1.6"><line x1="${cx}" x2="${cx}" y1="${Y(w[0])}" y2="${Y(w[1])}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(w[0])}" y2="${Y(w[0])}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(w[1])}" y2="${Y(w[1])}"/></g>`;
       g += `<g><rect x="${x}" y="${y}" width="${cw}" height="${Math.max(0, T + H - y)}" rx="2" fill="${DUO[i]}"><title>${m} ${a}: ${r.tip}</title></rect>` +
@@ -463,7 +464,7 @@ const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or nul
     const ub = us.find(u => u.model === m && u.arm === "baseline"), ua = us.find(u => u.model === m && u.arm === arm), rb = ub && fn(ub), ra = ua && fn(ua);
     if (rb && ra && rb.ci && ra.ci && !ra.nop) g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 34}" text-anchor="middle" font-size="11" fill="#66727f">${pTxt(fisherP(ra.ci[0], ra.ci[1], rb.ci[0], rb.ci[1]))}</text>`;
   });
-  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) + `<p class="tablenote" style="margin:0 0 .2rem">${DUO_NOTE}</p>` +
+  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) + `${quiet ? "" : `<p class="tablenote" style="margin:0 0 .2rem">${DUO_NOTE}</p>`}` +
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="baseline vs ${arm}">${g}</svg></div>`;
 };
 // follow-ups, "how deleted": per model, three outcome groups, each with a baseline column and a follow-up column (two colours)
@@ -843,7 +844,7 @@ function crossHtml(models, cols, units, opt = {}) {
   const v1 = (opt.noCharts ? "" : legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]])) + note +
     paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
       return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], ci: [yes, d], text: ann(yes, d, "runs", vs15(u, yes, d, uu => { const dd = uu.e.n - uu.e.broke[0]; return [dd - uu.e.never, dd]; })) }; })),
-    u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, ci: [yes, d], tip: `${yes}/${d} broke after a clean start` } : null; });
+    u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, ci: [yes, d], quiet: true, tip: `${yes}/${d} broke after a clean start` } : null; });
   const cum = (e, i) => R.filter(j => j <= i).reduce((a, j) => a + e.broke[j], 0);
   const fbNote = "Cumulative: % of valid runs that have broken a rule by that round.";
   const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [cum(e, i), e.n]; },
