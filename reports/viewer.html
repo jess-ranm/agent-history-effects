@@ -827,12 +827,12 @@ function crossHtml(models, cols, units, opt = {}) {
     `<button data-v="1" onclick="var t=this.closest('.tg');t.querySelectorAll('.seg button').forEach(function(b){b.classList.toggle('on',b===this)}.bind(this));t.querySelector('.v0').hidden=true;t.querySelector('.v1').hidden=false">per round</button></div>` +
     `<div class="v0">${a}</div><div class="v1" hidden>${b}</div></div>`;
   const v1b = opt.noCharts ? pairs() : toggle(fbLine(E, "label"), perRound);
-  const H1 = caption("Rule erosion times" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled)" : "")) + guide(G.rate1);
+  const H1 = caption("Rule erosion times") + guide(G.rate1);
   const d1 = defHtml(CROSS_DEFS.erosion) + table([opt.pooled ? "model" : "model, arm", "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], E.map(u => {
       const e = u.e, early = e.broke[0], yes = e.n - early - e.never;
       return `<tr><td class="l">${u.label}</td><td>${e.all}</td><td>${e.n}</td><td>${early}</td><td>${pct(early, e.n)}</td>` +
         `<td>${yes}</td><td${heat("never", yes, e.n - early)}>${pct(yes, e.n - early)}</td></tr>`; }).join(""));
-  const H1b = caption((opt.noCharts ? "Cumulative rule breaks by round" : "Rule breaks by round") + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled by round index)" : "")) + (opt.noCharts ? `<p class="tablenote">${fbNote}</p>` : "") + guide(G.cum) +
+  const H1b = caption((opt.noCharts ? "Cumulative rule breaks by round" : "Rule breaks by round")) + (opt.noCharts ? `<p class="tablenote">${fbNote}</p>` : "") + guide(G.cum) +
     (opt.noCharts ? "" : `<p class="headline">By the last round, the share of valid runs that had broken a rule: ` + E.map(u => `<b>${u.label.replace("qwen3-", "")}</b> ${share(u.e.n - u.e.never, u.e.n)}`).join(", ") + `.</p>`);
   const d1b = defHtml(CROSS_DEFS.first) + table([opt.pooled ? "model" : "model, arm", ...R.map(i => `r_${i}`), "valid_n"], E.map(u =>
       `<tr><td class="l">${u.label}</td>${R.map(i => `<td>${u.e.broke[i] || "."}</td>`).join("")}<td>${u.e.n}</td></tr>`).join(""), ". = zero.");
