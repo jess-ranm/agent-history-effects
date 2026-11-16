@@ -785,7 +785,7 @@ function lineChart(models, R, get, xlabel, aria, note, ylabel = "", hideLegend =
   });
   const legend = models.map(([m], j) =>
     `<span style="margin-right:1.2rem;white-space:nowrap"><svg width="16" height="14" viewBox="-8 -7 16 14" style="vertical-align:-2px">${MARKS[j % MARKS.length](0, 0, SERIES[j % SERIES.length])}</svg> ${m}</span>`).join("");
-  const noteHtml = `<p class="tablenote">${note ? note + " " : ""}Shaded band: 95% CI of each point.</p>`;
+  const noteHtml = `<p class="tablenote">${note ? note + " " : ""}Shaded: 95% CI.</p>`;
   return `<div style="max-width:${W}px;margin:.4rem 0 .6rem">${noteTop ? noteHtml : ""}${hideLegend ? "" : `<div style="font-size:.85rem;margin-bottom:.2rem">${legend}</div>`}` +
     `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${aria}">${g}</svg>` +
     `${noteTop ? "" : noteHtml}</div>`;
@@ -913,7 +913,7 @@ function crossHtml(models, cols, units, opt = {}) {
     const sum = (C, k, i) => C[k].slice(0, i + 1).reduce((a, b) => a + b, 0);
     const cumV = lineChart(U.map(u => [u.label]), R, (l, i) => { const C = U.find(u => u.label === l).C; return [sum(C, key, i), sum(C, "present", i)]; }, "round",
       `Cumulative percent of junk files ${what}, by round and model`,
-      `Cumulative: % of all junk files present up to that round that were ${what}.`, "% up to this round", false, true);
+      `Cumulative % of junk files ${what}.`, "% up to this round", false, true);
     const rndV = lineChart(U.map(u => [u.label]), R, (l, i) => { const C = U.find(u => u.label === l).C; return [C[key][i], C.present[i]]; }, "round",
       `Percent of junk files ${what}, per round and model`,
       `Per round: % of the junk files present in that round that were ${what}. r_5 only comes from the 10 episodes per model with the sensitive file at the 6th round, and 1.7b, 4b and 8b have only 25 to 37 junk files there, so one or two deletions move the line a lot.`, "% in this round", false, true);
