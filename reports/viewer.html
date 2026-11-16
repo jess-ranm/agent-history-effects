@@ -548,10 +548,10 @@ function tallyHtml(ks, byK, opt = {}) {
   }
   const v1b = lineChart([[current]], rcols.map((_, i) => i), (m, i) => [fbCounts.slice(0, i + 1).reduce((a, b) => a + b, 0), fbN], "round",
     "Percent of valid runs that had broken a rule by each round (cumulative)",
-    `Percent of the ${fbN} valid runs (${later.length > 1 ? "sensitive file at the " + ord(later[0] + 1) + " to " + ord(later[later.length - 1] + 1) + " round, pooled" : lab(later[0])}) that had broken a rule by the end of that round (cumulative). The curve only rises; where it levels off is the total break rate, and the gap below 100% is the runs that never broke. Hover a point for the count.`, "% broken by this round", true);
+    `Cumulative: % of the ${fbN} valid runs that have broken a rule by that round.`, "% broken by this round", true);
   const H1 = caption("Rule erosion times");
   const d1 = def("erosion") + table([kname, "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], t1);
-  const H1b = caption("At which round the agent starts breaking rules");
+  const H1b = caption("Cumulative rule breaks by round");
   const d1b = caption("share of valid runs by the round of their first rule break (the concentration)") +
     bars([...rcols.map((_, i) => ({ label: `r_${i}`, parts: [[fbN ? 100 * fbCounts[i] / fbN : 0, ROUND_COLORS[i], `${fbCounts[i]}/${fbN}`]],
       text: `${share(fbCounts[i], fbN)} <span class="why">(${fbCounts[i]} of ${fbN})</span>` })),
@@ -764,7 +764,7 @@ function crossHtml(models, cols, units, opt = {}) {
       return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>` }; })),
     u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, tip: `${yes}/${d} broke after a clean start` } : null; });
   const cum = (e, i) => R.filter(j => j <= i).reduce((a, j) => a + e.broke[j], 0);
-  const fbNote = "Cumulative: percent of each row's valid runs that had broken a rule by the end of that round. The curve only rises; where it levels off is the total break rate, and the gap below 100% is the runs that never broke. Hover a point for the count.";
+  const fbNote = "Cumulative: % of valid runs that have broken a rule by that round.";
   const fbLine = (rows, key) => lineChart(rows.map(u => [u[key]]), R, (l, i) => { const e = rows.find(u => u[key] === l).e; return [cum(e, i), e.n]; },
     "round", "Percent of valid runs that had broken a rule by each round (cumulative)", fbNote, "% broken by this round");
   const pairs = () => [...new Set(U.filter(u => u.model).map(u => u.model))].map(m => {      // follow-ups: per model, praise vs baseline and harm-first vs baseline side by side
@@ -781,7 +781,7 @@ function crossHtml(models, cols, units, opt = {}) {
       const e = u.e, early = e.broke[0], yes = e.n - early - e.never;
       return `<tr><td class="l">${u.label}</td><td>${e.all}</td><td>${e.n}</td><td>${early}</td><td>${pct(early, e.n)}</td>` +
         `<td>${yes}</td><td${heat("never", yes, e.n - early)}>${pct(yes, e.n - early)}</td></tr>`; }).join(""));
-  const H1b = caption("At which round the agent starts breaking rules" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled by round index)" : ""));
+  const H1b = caption("Cumulative rule breaks by round" + (opt.pooled ? " (sensitive file at the 2nd to 6th round, pooled by round index)" : ""));
   const d1b = defHtml(CROSS_DEFS.first) + table([opt.pooled ? "model" : "model, arm", ...R.map(i => `r_${i}`), "valid_n"], E.map(u =>
       `<tr><td class="l">${u.label}</td>${R.map(i => `<td>${u.e.broke[i] || "."}</td>`).join("")}<td>${u.e.n}</td></tr>`).join(""), ". = zero.");
 
