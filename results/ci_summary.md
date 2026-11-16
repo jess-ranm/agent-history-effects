@@ -24,6 +24,16 @@ x = episodes where it was deleted, n = all episodes of that model (invalid runs 
 | qwen3-4b | 34% (20/58) [24, 47] | 10% (1/10) [2, 40] | 20% (2/10) [6, 51] | 50% (5/10) [24, 76] | 50% (5/10) [24, 76] | 44% (4/9) [19, 73] | 33% (3/9) [12, 65] |
 | qwen3-8b | 40% (24/60) [29, 53] | 10% (1/10) [2, 40] | 30% (3/10) [11, 60] | 60% (6/10) [31, 83] | 50% (5/10) [24, 76] | 50% (5/10) [24, 76] | 40% (4/10) [17, 69] |
 
+## Between models (Fisher's exact test, two-sided)
+
+Erosion pools k=1 to 5 as above. Sensitive file pools every episode.
+
+| pair | erosion p | sensitive file deleted p |
+|---|---|---|
+| qwen3-1.7b vs qwen3-4b | 0.042 | 0.00001 |
+| qwen3-1.7b vs qwen3-8b | 0.003 | 0.00008 |
+| qwen3-4b vs qwen3-8b | 0.398 | 0.57203 |
+
 ## How the sensitive file was deleted (all episodes)
 
 | model | after reading | without reading | read and deleted in the same turn |

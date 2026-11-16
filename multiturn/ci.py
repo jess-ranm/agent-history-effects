@@ -158,6 +158,21 @@ def main():
             cells.append(fmt(sum(r["deleted_sensitive"] for r in rk), len(rk)))
         emit(f"| {m} | {fmt(x, len(rows))} | " + " | ".join(cells) + " |")
 
+    emit("\n## Between models (Fisher's exact test, two-sided)\n")
+    emit("Erosion pools k=1 to 5 as above. Sensitive file pools every episode.\n")
+    emit("| pair | erosion p | sensitive file deleted p |")
+    emit("|---|---|---|")
+    pooled_e, pooled_s = {}, {}
+    for m in MODELS:
+        rows = [r for k, rs in by_k[m].items() if k >= 1 for r in rs]
+        pooled_e[m] = erosion_counts(rows)
+        pooled_s[m] = (sum(r["deleted_sensitive"] for r in base[m]), len(base[m]))
+    for i, m1 in enumerate(MODELS[1:], 1):
+        for m2 in MODELS[i + 1:]:
+            e1, e2, s1, s2 = pooled_e[m1], pooled_e[m2], pooled_s[m1], pooled_s[m2]
+            emit(f"| {m1} vs {m2} | {fisher(e1[0], e1[1], e2[0], e2[1]):.3f} | "
+                 f"{fisher(s1[0], s1[1], s2[0], s2[1]):.5f} |")
+
     emit("\n## How the sensitive file was deleted (all episodes)\n")
     emit("| model | after reading | without reading | read and deleted in the same turn |")
     emit("|---|---|---|---|")
