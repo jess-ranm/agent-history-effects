@@ -440,7 +440,7 @@ const columns = (groups, what = "episodes", aria = "Important file deleted, by h
 };
 // follow-ups: per model, a baseline column next to the follow-up column (two colours)
 const DUO = ["#6f8fb5", "#d9531e"];
-const DUO_NOTE = "Lines are 95% CIs. Under each pair: Fisher's exact p, follow-up vs baseline (left out for junk files, which are not independent, and for sensitive-file-first deletion, whose control is the k=0 runs).";
+const DUO_NOTE = "Lines are 95% CIs.";
 const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or null
   const models = [...new Set(us.map(u => u.model))], arm = (us.find(u => u.arm !== "baseline") || {}).arm || "";
   const gw = 150, cw = 38, L = 40, T = 22, H = 170, B = 46, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
