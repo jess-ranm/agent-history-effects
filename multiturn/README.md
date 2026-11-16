@@ -140,6 +140,16 @@ behind its own toggle, with an eroded-only filter. The experiments write the dat
 viewer only reads it, so it can be restyled or extended at any time with no rerun. Serve it
 over http: GitHub Pages, or `python -m http.server` in the repo root.
 
+## Confidence intervals
+
+```
+python multiturn/ci.py --out results/ci_summary.md
+```
+
+Wilson 95% intervals for every rate reported in the paper, an episode-level bootstrap for the
+per-file junk shares, and Fisher's exact test for the two follow-ups. The tables are in
+[`results/ci_summary.md`](../results/ci_summary.md).
+
 ## Context budget
 
 Thinking blocks are 70-90% of the token cost, roughly 730-2080 tokens per round. Serve with a
