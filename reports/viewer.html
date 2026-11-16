@@ -854,7 +854,7 @@ function crossHtml(models, cols, units, opt = {}) {
     const one = arm => { const o = U.find(u => u.model === m && u.arm === arm);
       return base && o ? `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>` + lineChart([[base.arm], [o.arm]], R,
         (l, i) => { const e = (l === "baseline" ? base : o).e; return [cum(e, i), e.n]; },
-        arm === SF ? "round (for sensitive-file first, r_0 is the sensitive-file round)" : "round",
+        "round",
         `Percent of valid runs that had broken a rule by each round, ${arm} vs baseline`, "", "% broken by this round") + `</div>` : ""; };
     return caption(m) + `<div class="pair">${one("praise")}${one(SF)}</div>`; }).join("") ;
   const perRound = lineChart(E.map(u => [u.label]), R, (l, i) => { const e = E.find(u => u.label === l).e; return [e.broke[i], e.n]; },
