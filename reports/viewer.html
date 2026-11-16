@@ -442,6 +442,27 @@ const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or nul
   return legend([[DUO[0], "baseline"], [DUO[1], arm]]) +
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="baseline vs ${arm}">${g}</svg></div>`;
 };
+// follow-ups, "how deleted": per model, three outcome groups, each with a baseline column and a follow-up column (two colours)
+const duoHow = (us, fn, names) => {            // fn(u) -> [{v, tip} x names.length] or null
+  const models = [...new Set(us.map(u => u.model))], arm = (us.find(u => u.arm !== "baseline") || {}).arm || "";
+  const k = names.length, cw = 20, pg = 4, og = cw * 2 + pg + 22, gw = k * og + 14, L = 40, T = 22, H = 170, B = 48, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
+  let g = "";
+  for (const v of [0, 25, 50, 75, 100])
+    g += `<line x1="${L}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d8dee6"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#66727f">${v}%</text>`;
+  models.forEach((m, j) => {
+    const rs = ["baseline", arm].map(a => { const u = us.find(u => u.model === m && u.arm === a); return u && fn(u); });
+    names.forEach((nm, o) => {
+      const x0 = L + j * gw + o * og + 6;
+      rs.forEach((r, i) => { if (!r) return; const x = x0 + i * (cw + pg), y = Y(r[o].v);
+        g += `<g><rect x="${x}" y="${y}" width="${cw}" height="${Math.max(0, T + H - y)}" rx="2" fill="${DUO[i]}"><title>${m} ${i ? arm : "baseline"}, ${nm}: ${r[o].tip}</title></rect>` +
+          `<text x="${x + cw / 2}" y="${y - 3}" text-anchor="middle" font-size="10" fill="#17212b">${rnd(r[o].v)}%</text></g>`; });
+      g += `<text x="${x0 + cw + pg / 2}" y="${T + H + 14}" text-anchor="middle" font-size="10.5" fill="#44505c">${nm}</text>`;
+    });
+    g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 36}" text-anchor="middle" font-size="12.5" fill="#17212b">${m.replace("qwen3-", "")}</text>`;
+  });
+  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) +
+    `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="baseline vs ${arm}, how deleted">${g}</svg></div>`;
+};
 // grouped column chart (all-models tab): one group per row, one column per outcome
 const columnsChart = (groups, what = "episodes", aria = "Deleted, by how, per group") => {
   const gw = 150, cw = 34, L = 40, T = 22, H = 190, B = 54, W = L + groups.length * gw + 10, Y = v => T + H * (1 - v / 100);
@@ -781,8 +802,8 @@ function crossHtml(models, cols, units, opt = {}) {
   const LEG = [[BAR.after, "after reading"], [BAR.blind, "other"], [BAR.never, "without read"]];
   const note = opt.note ? `<p class="tablenote">${opt.note}</p>` : "";
 
-  const paired = (f, fn) => !opt.noCharts ? f(U) : `<div class="pair">` + ["praise", SF].map(arm =>
-    `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${(fn ? duoChart : f)(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn)}</div>`).join("") + `</div>`;
+  const paired = (f, fn, hn) => !opt.noCharts ? f(U) : `<div class="pair">` + ["praise", SF].map(arm =>
+    `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${hn ? duoHow(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn, hn) : (fn ? duoChart : f)(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn)}</div>`).join("") + `</div>`;
   // 1. erosion
   const v1 = (opt.noCharts ? "" : legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]])) + note +
     paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
@@ -818,10 +839,11 @@ function crossHtml(models, cols, units, opt = {}) {
 
   // 2. important file
   const v2a = paired(us => bars(us.filter(u => u.n).map(u => ({ label: u.label, parts: [[100 * u.harm / u.n, BAR.erosion, `${u.harm}/${u.n}`]],
-    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>` })),
-    u => u.n ? { v: 100 * u.harm / u.n, tip: `${u.harm}/${u.n} deleted` } : null));
+    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>` }))),
+    u => u.n ? { v: 100 * u.harm / u.n, tip: `${u.harm}/${u.n} deleted` } : null);
   const v2 = paired(us => (opt.noCharts ? columns : columnsChart)(us.filter(u => u.n).map(u => { const p = x => 100 * x / u.n;
-    return { label: u.label, sub: `${u.harm}/${u.n} deleted`, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; })));
+    return { label: u.label, sub: `${u.harm}/${u.n} deleted`, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; })),
+    u => u.n ? [[u.after], [u.never], [u.blind]].map(([c]) => ({ v: 100 * c / u.n, tip: `${c}/${u.n}` })) : null, ["read first", "no read", "other"]);
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
   const d2a = defHtml(CROSS_DEFS.harm) + table(head, grid(s => `<td${heat("never", s.harm, s.n)} title="${s.harm}/${s.n}">${pct(s.harm, s.n)}</td>`));
   const H2 = caption("Important file: was it read before deletion?") + guide(G.how2);
@@ -834,7 +856,8 @@ function crossHtml(models, cols, units, opt = {}) {
   // 3. junk files: rate and how
   const v3 = paired(us => (opt.noCharts ? columns : columnsChart)(us.filter(u => u.jp).map(u => { const d = u.ja + u.jb + u.jn, p = x => 100 * x / (d || 1);
     return { label: u.label, sub: `${d}/${u.jp} deleted`, vals: [p(u.ja), p(u.jn), p(u.jb)], counts: [u.ja, u.jn, u.jb] }; }),
-    "junk deletions", "Junk files deleted, by how, per group"));
+    "junk deletions", "Junk files deleted, by how, per group"),
+    u => { const d = u.ja + u.jb + u.jn; return u.jp && d ? [u.ja, u.jn, u.jb].map(c => ({ v: 100 * c / d, tip: `${c}/${d}` })) : null; }, ["read first", "no read", "other"]);
   const v3a = paired(us => bars(us.filter(u => u.jp).map(u => { const d = u.ja + u.jb + u.jn;
     return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], text: `${share(d, u.jp)} <span class="why">(${d} of ${u.jp})</span>` }; })),
     u => u.jp ? { v: 100 * (u.ja + u.jb + u.jn) / u.jp, tip: `${u.ja + u.jb + u.jn}/${u.jp} junk files deleted` } : null);
