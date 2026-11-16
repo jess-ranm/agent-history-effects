@@ -393,6 +393,15 @@ const BAR = { after: "#2f7d5b", blind: "#e08a3c", never: "#b42318", erosion: "#b
 const wilson = (x, n) => { if (!n) return null; const z = 1.96, p = x / n, d = 1 + z * z / n, c = p + z * z / (2 * n), h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n));
   return [100 * Math.max(0, (c - h) / d), 100 * Math.min(1, (c + h) / d)]; };
 const ciTxt = (x, n) => { const w = wilson(x, n); return w ? ` <span class="why ci" title="95% Wilson interval">[${Math.round(w[0])}, ${Math.round(w[1])}]</span>` : ""; };
+// two-sided Fisher exact test (same rule as scipy): sum of table probabilities not larger than the observed one
+const fisherP = (a, n1, b, n2) => { if (n1 < 3 || n2 < 3) return null;
+  const lf = [0]; for (let i = 1; i <= n1 + n2; i++) lf[i] = lf[i - 1] + Math.log(i);
+  const K = a + b, N = n1 + n2, lc = (n, k) => lf[n] - lf[k] - lf[n - k];
+  const lp = x => lc(n1, x) + lc(n2, K - x) - lc(N, K), obs = lp(a); let t = 0;
+  for (let x = Math.max(0, K - n2); x <= Math.min(n1, K); x++) { const v = lp(x); if (v <= obs + 1e-9) t += Math.exp(v); }
+  return Math.min(1, t); };
+const pTxt = p => p === null ? "p n.a." : p < 0.001 ? "p < 0.001" : "p = " + (p < 0.1 ? p.toFixed(3) : p.toFixed(2));
+const pctCI = (x, n) => { const w = wilson(x, n); return n ? `${rnd(100 * x / n)}% [${Math.round(w[0])}, ${Math.round(w[1])}]` : ""; };
 const whisk = (x, n) => { const w = wilson(x, n); return w ? `<b class="whisk" style="left:${w[0]}%;width:${w[1] - w[0]}%" title="95% Wilson interval ${Math.round(w[0])}\u2013${Math.round(w[1])}%"></b>` : ""; };
 const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], text, ci: [x, n]}]
   `<div class="bars">${rows.map(r =>
@@ -426,13 +435,14 @@ const columns = (groups, what = "episodes", aria = "Important file deleted, by h
   return legend(COLS2.map(([t, c]) => [c, t])) +
     bars(groups.map(gr => ({ label: gr.label,
       parts: gr.vals.map((v, i) => [v, COLS2[i][1], `${gr.label}, ${COLS2[i][0]}: ${gr.counts[i]} (${rnd(v)}%)`, v >= 15 ? rnd(v) + "%" : "", TC[i]]),
-      text: `<span class="why">${gr.sub}</span>` })));
+      text: `<span class="why">${gr.sub}</span>` + (gr.n ? ` <span class="why ci">${gr.counts.map((c, i) => { const w = wilson(c, gr.n); return `${COLS2[i][0]} [${Math.round(w[0])}, ${Math.round(w[1])}]`; }).join(" \u00b7 ")}</span>` : "") })));
 };
 // follow-ups: per model, a baseline column next to the follow-up column (two colours)
 const DUO = ["#6f8fb5", "#d9531e"];
+const DUO_NOTE = "Lines are 95% CIs. Under each pair: Fisher's exact p, follow-up vs baseline (left out for junk files, which are not independent, and for sensitive-file-first deletion, whose control is the k=0 runs).";
 const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or null
   const models = [...new Set(us.map(u => u.model))], arm = (us.find(u => u.arm !== "baseline") || {}).arm || "";
-  const gw = 150, cw = 38, L = 40, T = 22, H = 170, B = 30, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
+  const gw = 150, cw = 38, L = 40, T = 22, H = 170, B = 46, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
   let g = "";
   for (const v of [0, 25, 50, 75, 100])
     g += `<line x1="${L}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d8dee6"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#66727f">${v}%</text>`;
@@ -447,14 +457,16 @@ const duoChart = (us, fn) => {            // fn(u) -> {v: pct, tip: text} or nul
         `<text x="${cx}" y="${(w ? Y(w[1]) : y) - 4}" text-anchor="middle" font-size="11" fill="#17212b">${rnd(r.v)}%</text></g>`;
     });
     g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 18}" text-anchor="middle" font-size="12.5" fill="#17212b">${m.replace("qwen3-", "")}</text>`;
+    const ub = us.find(u => u.model === m && u.arm === "baseline"), ua = us.find(u => u.model === m && u.arm === arm), rb = ub && fn(ub), ra = ua && fn(ua);
+    if (rb && ra && rb.ci && ra.ci && !ra.nop) g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 34}" text-anchor="middle" font-size="11" fill="#66727f">${pTxt(fisherP(ra.ci[0], ra.ci[1], rb.ci[0], rb.ci[1]))}</text>`;
   });
-  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) +
+  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) + `<p class="tablenote" style="margin:0 0 .2rem">${DUO_NOTE}</p>` +
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="baseline vs ${arm}">${g}</svg></div>`;
 };
 // follow-ups, "how deleted": per model, three outcome groups, each with a baseline column and a follow-up column (two colours)
 const duoHow = (us, fn, names) => {            // fn(u) -> [{v, tip} x names.length] or null
   const models = [...new Set(us.map(u => u.model))], arm = (us.find(u => u.arm !== "baseline") || {}).arm || "";
-  const k = names.length, cw = 20, pg = 4, og = cw * 2 + pg + 22, gw = k * og + 14, L = 40, T = 22, H = 170, B = 48, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
+  const k = names.length, cw = 20, pg = 4, og = cw * 2 + pg + 22, gw = k * og + 14, L = 40, T = 22, H = 170, B = 62, W = L + models.length * gw + 10, Y = v => T + H * (1 - v / 100);
   let g = "";
   for (const v of [0, 25, 50, 75, 100])
     g += `<line x1="${L}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d8dee6"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#66727f">${v}%</text>`;
@@ -462,14 +474,16 @@ const duoHow = (us, fn, names) => {            // fn(u) -> [{v, tip} x names.len
     const rs = ["baseline", arm].map(a => { const u = us.find(u => u.model === m && u.arm === a); return u && fn(u); });
     names.forEach((nm, o) => {
       const x0 = L + j * gw + o * og + 6;
-      rs.forEach((r, i) => { if (!r) return; const x = x0 + i * (cw + pg), y = Y(r[o].v);
+      rs.forEach((r, i) => { if (!r) return; const x = x0 + i * (cw + pg), y = Y(r[o].v), w = r[o].ci && wilson(...r[o].ci), cx = x + cw / 2;
+        if (w) g += `<g stroke="#17212b" stroke-width="1.4"><line x1="${cx}" x2="${cx}" y1="${Y(w[0])}" y2="${Y(w[1])}"/><line x1="${cx - 3}" x2="${cx + 3}" y1="${Y(w[0])}" y2="${Y(w[0])}"/><line x1="${cx - 3}" x2="${cx + 3}" y1="${Y(w[1])}" y2="${Y(w[1])}"/></g>`;
         g += `<g><rect x="${x}" y="${y}" width="${cw}" height="${Math.max(0, T + H - y)}" rx="2" fill="${DUO[i]}"><title>${m} ${i ? arm : "baseline"}, ${nm}: ${r[o].tip}</title></rect>` +
-          `<text x="${x + cw / 2}" y="${y - 3}" text-anchor="middle" font-size="10" fill="#17212b">${rnd(r[o].v)}%</text></g>`; });
+          `<text x="${cx}" y="${(w ? Y(w[1]) : y) - 3}" text-anchor="middle" font-size="10" fill="#17212b">${rnd(r[o].v)}%</text></g>`; });
       g += `<text x="${x0 + cw + pg / 2}" y="${T + H + 14}" text-anchor="middle" font-size="10.5" fill="#44505c">${nm}</text>`;
+      if (rs[0] && rs[1] && rs[0][o].ci && rs[1][o].ci && !rs[1][o].nop) g += `<text x="${x0 + cw + pg / 2}" y="${T + H + 27}" text-anchor="middle" font-size="9.5" fill="#66727f">${pTxt(fisherP(rs[1][o].ci[0], rs[1][o].ci[1], rs[0][o].ci[0], rs[0][o].ci[1])).replace("p = ", "").replace("p ", "")}</text>`;
     });
-    g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 36}" text-anchor="middle" font-size="12.5" fill="#17212b">${m.replace("qwen3-", "")}</text>`;
+    g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 50}" text-anchor="middle" font-size="12.5" fill="#17212b">${m.replace("qwen3-", "")}</text>`;
   });
-  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) +
+  return legend([[DUO[0], "baseline"], [DUO[1], arm]]) + `<p class="tablenote" style="margin:0 0 .2rem">${DUO_NOTE}</p>` +
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="baseline vs ${arm}, how deleted">${g}</svg></div>`;
 };
 // grouped column chart (all-models tab): one group per row, one column per outcome
@@ -481,9 +495,11 @@ const columnsChart = (groups, what = "episodes", aria = "Deleted, by how, per gr
   groups.forEach((gr, j) => {
     const x0 = L + j * gw + (gw - 3 * cw - 8) / 2;
     gr.vals.forEach((v, i) => {
-      const x = x0 + i * (cw + 4), y = Y(v), tip = `${gr.label}, ${COLS2[i][0]}: ${gr.counts[i]} (${rnd(v)}%)`;
+      const x = x0 + i * (cw + 4), y = Y(v), w = gr.n && wilson(gr.counts[i], gr.n), cx = x + cw / 2,
+        tip = `${gr.label}, ${COLS2[i][0]}: ${gr.counts[i]} (${rnd(v)}%)` + (w ? `, 95% CI ${Math.round(w[0])}\u2013${Math.round(w[1])}%` : "");
+      if (w) g += `<g stroke="#17212b" stroke-width="1.6"><line x1="${cx}" x2="${cx}" y1="${Y(w[0])}" y2="${Y(w[1])}"/><line x1="${cx - 4}" x2="${cx + 4}" y1="${Y(w[0])}" y2="${Y(w[0])}"/><line x1="${cx - 4}" x2="${cx + 4}" y1="${Y(w[1])}" y2="${Y(w[1])}"/></g>`;
       g += `<g><rect x="${x}" y="${y}" width="${cw}" height="${Math.max(0, T + H - y)}" rx="2" fill="${COLS2[i][1]}"><title>${tip}</title></rect>` +
-        (v > 0 ? `<text x="${x + cw / 2}" y="${y - 4}" text-anchor="middle" font-size="11" fill="#17212b">${rnd(v)}%</text>` : "") + `</g>`;
+        (v > 0 ? `<text x="${cx}" y="${(w ? Y(w[1]) : y) - 4}" text-anchor="middle" font-size="11" fill="#17212b">${rnd(v)}%</text>` : "") + `</g>`;
     });
     g += `<text x="${L + j * gw + gw / 2}" y="${T + H + 18}" text-anchor="middle" font-size="12.5" fill="#17212b">${gr.label.replace("qwen3-", "")}</text>` +
          `<text x="${L + j * gw + gw / 2}" y="${T + H + 34}" text-anchor="middle" font-size="11" fill="#66727f">${gr.sub}</text>`;
@@ -514,7 +530,7 @@ function tallyHtml(ks, byK, opt = {}) {
     const early = valid.filter(c => c.rightAway).length;
     return `<tr><td>${lab(k)}</td><td>${all.length}</td><td>${valid.length}</td>` +
       `<td>${early}</td><td>${pct(early, valid.length)}</td>` +
-      `<td>${kn(k) === 0 ? "" : yes}</td><td>${kn(k) === 0 ? "" : pct(yes, valid.length - early)}</td></tr>`;
+      `<td>${kn(k) === 0 ? "" : yes}</td><td>${kn(k) === 0 ? "" : pctCI(yes, valid.length - early)}</td></tr>`;
   }).join("");
 
   // 2. first_broke_at: every episode whose final round ran (r_0 breaks included)
@@ -531,7 +547,7 @@ function tallyHtml(ks, byK, opt = {}) {
 
   // 3. impact: the important file, out of valid episodes
   const t3a = ks.map(k => { const n = byK[k].valid.length, dele = byK[k].valid.filter(c => c.harm).length;
-    return `<tr><td>${lab(k)}</td><td>${n}</td><td>${dele}</td><td>${pct(dele, n)}</td></tr>`; }).join("");
+    return `<tr><td>${lab(k)}</td><td>${n}</td><td>${dele}</td><td>${pctCI(dele, n)}</td></tr>`; }).join("");
   const t3b = ks.map(k => { const { valid } = byK[k], n = valid.length, h = w => valid.filter(c => c.how === w).length;
     return `<tr><td>${lab(k)}</td><td>${n}</td><td>${pct(h("after"), n)}</td><td>${pct(h("blind"), n)}</td><td>${pct(h("never"), n)}</td></tr>`; }).join("");
 
@@ -619,7 +635,7 @@ function tallyHtml(ks, byK, opt = {}) {
   const v2a = bars(all.filter(k => S[k].n).map(k => { const s = S[k];
     return { label: lab(k), parts: [[100 * s.dele / s.n, BAR.erosion, `${s.dele}/${s.n}`]], ci: [s.dele, s.n], text: `${share(s.dele, s.n)} <span class="why">(${s.dele} of ${s.n})</span>${ciTxt(s.dele, s.n)}` }; }));
   const v2 = columns(all.filter(k => S[k].n).map(k => { const s = S[k], p = x => 100 * x / s.n;
-    return { label: lab(k), sub: `${s.dele}/${s.n} deleted`, vals: [p(s.after), p(s.never), p(s.blind)], counts: [s.after, s.never, s.blind] }; }));
+    return { label: lab(k), sub: `${s.dele}/${s.n} deleted`, n: s.n, vals: [p(s.after), p(s.never), p(s.blind)], counts: [s.after, s.never, s.blind] }; }));
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
   const d2a = defHtml(DEFS.impact.slice(0, 4)) + table([kname, "valid_n", "important_deleted", "important_deleted_%"], t3a);
   const H2 = caption("Important file: was it read before deletion?") + guide(G.how2);
@@ -634,7 +650,7 @@ function tallyHtml(ks, byK, opt = {}) {
   const v3a = bars(RI.map(i => { const d = tot.after[i] + tot.blind[i] + tot.never[i];
     return { label: `${ord(i + 1)} round`, parts: [[100 * d / tot.present[i], BAR.after, `${d}/${tot.present[i]}`]], ci: [d, tot.present[i]], text: `${share(d, tot.present[i])} <span class="why">(${d} of ${tot.present[i]})</span>${ciTxt(d, tot.present[i])}` }; }));
   const v3 = columns(RI.map(i => { const p = x => 100 * x / (tot.after[i] + tot.blind[i] + tot.never[i] || 1), d = tot.after[i] + tot.blind[i] + tot.never[i];
-    return { label: `${ord(i + 1)} round`, sub: `${d}/${tot.present[i]} deleted`, vals: [p(tot.after[i]), p(tot.never[i]), p(tot.blind[i])], counts: [tot.after[i], tot.never[i], tot.blind[i]] }; }),
+    return { label: `${ord(i + 1)} round`, sub: `${d}/${tot.present[i]} deleted`, n: d, vals: [p(tot.after[i]), p(tot.never[i]), p(tot.blind[i])], counts: [tot.after[i], tot.never[i], tot.blind[i]] }; }),
     "junk deletions", "Junk files deleted, by how, per round");
   const t6 = `<tr><td class="l">junk deleted at all</td>` + rcols.map((_, i) => !tot.present[i] ? "<td></td>" :
     `<td class="m" title="${tot.after[i] + tot.blind[i] + tot.never[i]}/${tot.present[i]}">${pct2(tot.after[i] + tot.blind[i] + tot.never[i], tot.present[i])}</td>`).join("") + `</tr>`;
@@ -741,7 +757,8 @@ const MARKS = [(x, y, c) => `<circle cx="${x}" cy="${y}" r="4.5" fill="${c}" str
 function lineChart(models, R, get, xlabel, aria, note, ylabel = "", hideLegend = false, noteTop = false) {
   const W = 640, H = 300, L = ylabel ? 62 : 46, T = 16, B = 40, Rt = 20;
   const pctOf = (m, i) => { const [a, n] = get(m, i); return n ? 100 * a / n : 0; };
-  const top = Math.max(10, Math.ceil(Math.max(...models.flatMap(([m]) => R.map(i => pctOf(m, i)))) / 10) * 10);
+  const hiOf = (m, i) => { const [a, n] = get(m, i), w = n ? wilson(a, n) : null; return w ? w[1] : 0; };
+  const top = Math.max(10, Math.ceil(Math.max(...models.flatMap(([m]) => R.map(i => hiOf(m, i)))) / 10) * 10);
   const X = i => L + (W - L - Rt) * (R.indexOf(i) / Math.max(1, R.length - 1));
   const Y = v => T + (H - T - B) * (1 - v / top);
   let g = "";
@@ -754,6 +771,8 @@ function lineChart(models, R, get, xlabel, aria, note, ylabel = "", hideLegend =
   g += `<text x="${(L + W - Rt) / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="#66727f">${xlabel}</text>`;
   models.forEach(([m], j) => {
     const c = SERIES[j % SERIES.length], pts = R.filter(i => get(m, i)[1]).map(i => [X(i), Y(pctOf(m, i)), i]);
+    const band = pts.map(([x, , i]) => { const [a, n] = get(m, i), w = wilson(a, n); return w ? [x, Y(w[1]), Y(w[0])] : null; }).filter(Boolean);
+    if (band.length > 1) g += `<polygon fill="${c}" fill-opacity=".12" stroke="none" points="${band.map(b => b[0] + "," + b[1]).join(" ")} ${band.slice().reverse().map(b => b[0] + "," + b[2]).join(" ")}"/>`;
     g += `<polyline fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p => p[0] + "," + p[1]).join(" ")}"/>`;
     for (const [x, y, i] of pts) {
       const [a, n] = get(m, i), tip = `${m}, r_${i}: ${a}/${n} (${rnd(pctOf(m, i))}%)`;
@@ -763,7 +782,7 @@ function lineChart(models, R, get, xlabel, aria, note, ylabel = "", hideLegend =
   });
   const legend = models.map(([m], j) =>
     `<span style="margin-right:1.2rem;white-space:nowrap"><svg width="16" height="14" viewBox="-8 -7 16 14" style="vertical-align:-2px">${MARKS[j % MARKS.length](0, 0, SERIES[j % SERIES.length])}</svg> ${m}</span>`).join("");
-  const noteHtml = note ? `<p class="tablenote">${note}</p>` : "";
+  const noteHtml = `<p class="tablenote">${note ? note + " " : ""}Shaded band: 95% CI of each point.</p>`;
   return `<div style="max-width:${W}px;margin:.4rem 0 .6rem">${noteTop ? noteHtml : ""}${hideLegend ? "" : `<div style="font-size:.85rem;margin-bottom:.2rem">${legend}</div>`}` +
     `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${aria}">${g}</svg>` +
     `${noteTop ? "" : noteHtml}</div>`;
@@ -813,10 +832,14 @@ function crossHtml(models, cols, units, opt = {}) {
 
   const paired = (f, fn, hn) => !opt.noCharts ? f(U) : `<div class="pair">` + ["praise", SF].map(arm =>
     `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${hn ? duoHow(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn, hn) : (fn ? duoChart : f)(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn)}</div>`).join("") + `</div>`;
+  // p vs 1.7B (all-models tab only: rows are models); the follow-ups show p vs their own baseline in the chart
+  const REF = opt.pooled ? U.find(u => /1\.7b/.test(u.label)) : null;
+  const vs15 = (u, x, n, get) => { if (!REF) return ""; if (u === REF) return ` <span class="why">reference</span>`;
+    const [rx, rn] = get(REF); return ` <span class="why ci">${pTxt(fisherP(x, n, rx, rn))} vs 1.7B</span>`; };
   // 1. erosion
   const v1 = (opt.noCharts ? "" : legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]])) + note +
     paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
-      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], ci: [yes, d], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>${ciTxt(yes, d)}` }; })),
+      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], ci: [yes, d], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>${ciTxt(yes, d)}${vs15(u, yes, d, uu => { const dd = uu.e.n - uu.e.broke[0]; return [dd - uu.e.never, dd]; })}` }; })),
     u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, ci: [yes, d], tip: `${yes}/${d} broke after a clean start` } : null; });
   const cum = (e, i) => R.filter(j => j <= i).reduce((a, j) => a + e.broke[j], 0);
   const fbNote = "Cumulative: % of valid runs that have broken a rule by that round.";
@@ -840,7 +863,7 @@ function crossHtml(models, cols, units, opt = {}) {
   const d1 = defHtml(CROSS_DEFS.erosion) + table([opt.pooled ? "model" : "model, arm", "n", "valid_n", "broke_r0", "broke_r0_%", "erosion_times", "erosion_%"], E.map(u => {
       const e = u.e, early = e.broke[0], yes = e.n - early - e.never;
       return `<tr><td class="l">${u.label}</td><td>${e.all}</td><td>${e.n}</td><td>${early}</td><td>${pct(early, e.n)}</td>` +
-        `<td>${yes}</td><td${heat("never", yes, e.n - early)}>${pct(yes, e.n - early)}</td></tr>`; }).join(""));
+        `<td>${yes}</td><td${heat("never", yes, e.n - early)}>${pctCI(yes, e.n - early)}</td></tr>`; }).join(""));
   const H1b = caption((opt.noCharts ? "Cumulative rule breaks by round" : "Rule breaks by round")) + (opt.noCharts ? `<p class="tablenote">${fbNote}</p>` : "") + guide(G.cum) +
     "";
   const d1b = defHtml(CROSS_DEFS.first) + table([opt.pooled ? "model" : "model, arm", ...R.map(i => `r_${i}`), "valid_n"], E.map(u =>
@@ -848,13 +871,13 @@ function crossHtml(models, cols, units, opt = {}) {
 
   // 2. important file
   const v2a = paired(us => bars(us.filter(u => u.n).map(u => ({ label: u.label, parts: [[100 * u.harm / u.n, BAR.erosion, `${u.harm}/${u.n}`]], ci: [u.harm, u.n],
-    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>${ciTxt(u.harm, u.n)}` }))),
-    u => u.n ? { v: 100 * u.harm / u.n, ci: [u.harm, u.n], tip: `${u.harm}/${u.n} deleted` } : null);
+    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>${ciTxt(u.harm, u.n)}${vs15(u, u.harm, u.n, uu => [uu.harm, uu.n])}` }))),
+    u => u.n ? { v: 100 * u.harm / u.n, ci: [u.harm, u.n], nop: u.arm === SF, tip: `${u.harm}/${u.n} deleted` } : null);
   const v2 = paired(us => (opt.noCharts ? columns : columnsChart)(us.filter(u => u.n).map(u => { const p = x => 100 * x / u.n;
-    return { label: u.label, sub: `${u.harm}/${u.n} deleted`, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; })),
-    u => u.n ? [[u.after], [u.never], [u.blind]].map(([c]) => ({ v: 100 * c / u.n, tip: `${c}/${u.n}` })) : null, ["read first", "no read", "other"]);
+    return { label: u.label, sub: `${u.harm}/${u.n} deleted`, n: u.n, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; })),
+    u => u.n ? [[u.after], [u.never], [u.blind]].map(([c]) => ({ v: 100 * c / u.n, ci: [c, u.n], nop: u.arm === SF, tip: `${c}/${u.n}` })) : null, ["read first", "no read", "other"]);
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
-  const d2a = defHtml(CROSS_DEFS.harm) + table(head, grid(s => `<td${heat("never", s.harm, s.n)} title="${s.harm}/${s.n}">${pct(s.harm, s.n)}</td>`));
+  const d2a = defHtml(CROSS_DEFS.harm) + table(head, grid(s => `<td${heat("never", s.harm, s.n)} title="${s.harm}/${s.n}">${pctCI(s.harm, s.n)}</td>`));
   const H2 = caption("Important file: was it read before deletion?") + guide(G.how2);
   const d2 = defHtml(CROSS_DEFS.how) + caption("important file: how it was deleted (percent of all episodes)") +
     table(["", "", ...cols.map(c => c.label)], models.map(([m]) => how3.map(([nm, key], j) =>
@@ -864,12 +887,12 @@ function crossHtml(models, cols, units, opt = {}) {
 
   // 3. junk files: rate and how
   const v3 = paired(us => (opt.noCharts ? columns : columnsChart)(us.filter(u => u.jp).map(u => { const d = u.ja + u.jb + u.jn, p = x => 100 * x / (d || 1);
-    return { label: u.label, sub: `${d}/${u.jp} deleted`, vals: [p(u.ja), p(u.jn), p(u.jb)], counts: [u.ja, u.jn, u.jb] }; }),
+    return { label: u.label, sub: `${d}/${u.jp} deleted`, n: d, vals: [p(u.ja), p(u.jn), p(u.jb)], counts: [u.ja, u.jn, u.jb] }; }),
     "junk deletions", "Junk files deleted, by how, per group"),
-    u => { const d = u.ja + u.jb + u.jn; return u.jp && d ? [u.ja, u.jn, u.jb].map(c => ({ v: 100 * c / d, tip: `${c}/${d}` })) : null; }, ["read first", "no read", "other"]);
+    u => { const d = u.ja + u.jb + u.jn; return u.jp && d ? [u.ja, u.jn, u.jb].map(c => ({ v: 100 * c / d, ci: [c, d], nop: true, tip: `${c}/${d}` })) : null; }, ["read first", "no read", "other"]);
   const v3a = paired(us => bars(us.filter(u => u.jp).map(u => { const d = u.ja + u.jb + u.jn;
     return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], ci: [d, u.jp], text: `${share(d, u.jp)} <span class="why">(${d} of ${u.jp})</span>${ciTxt(d, u.jp)}` }; })),
-    u => u.jp ? { v: 100 * (u.ja + u.jb + u.jn) / u.jp, ci: [u.ja + u.jb + u.jn, u.jp], tip: `${u.ja + u.jb + u.jn}/${u.jp} junk files deleted` } : null);
+    u => u.jp ? { v: 100 * (u.ja + u.jb + u.jn) / u.jp, ci: [u.ja + u.jb + u.jn, u.jp], nop: true, tip: `${u.ja + u.jb + u.jn}/${u.jp} junk files deleted` } : null);
   const H3a = caption("Junk files: deletion rate") + guide(G.rate3);
   const d3a = defHtml(CROSS_DEFS.junk) + caption("junk files deleted in the final round (%)") +
     table(head, grid(s => `<td${heat("after", s.junk.deleted, s.junk.present)}>${pct(s.junk.deleted, s.junk.present)}</td>`));
