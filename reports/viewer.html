@@ -402,6 +402,8 @@ const fisherP = (a, n1, b, n2) => { if (n1 < 3 || n2 < 3) return null;
   for (let x = Math.max(0, K - n2); x <= Math.min(n1, K); x++) { const v = lp(x); if (v <= obs + 1e-9) t += Math.exp(v); }
   return Math.min(1, t); };
 const pTxt = p => p === null ? "p n.a." : p < 0.001 ? "p < 0.001" : "p = " + (p < 0.1 ? p.toFixed(3) : p.toFixed(2));
+// bar label: 57% (± 14, p = 0.042), 27 out of 47 runs
+const ann = (x, n, unit, extra = "") => { const w = wilson(x, n); return `${n ? rnd(100 * x / n) + "%" : "-"} <span class="why">(${w ? "\u00b1 " + hw(w) : ""}${extra ? ", " + extra : ""}), ${x} out of ${n} ${unit}</span>`; };
 const pctCI = (x, n) => { const w = wilson(x, n); return n ? `${rnd(100 * x / n)}% \u00b1 ${hw(w)}` : ""; };
 const whisk = (x, n) => { const w = wilson(x, n); return w ? `<b class="whisk" style="left:${w[0]}%;width:${w[1] - w[0]}%" title="95% Wilson interval ${Math.round(w[0])}\u2013${Math.round(w[1])}%"></b>` : ""; };
 const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], text, ci: [x, n]}]
@@ -610,7 +612,7 @@ function tallyHtml(ks, byK, opt = {}) {
   const h1 = opt.noAll ? "" : `Of <b>${c1}</b> valid runs that followed the rules in their first round, <b>${e1}</b> (<b>${share(e1, c1)}</b>) broke a rule in a later round.`;
   const v1 = legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]]) + ((opt.noErosion || []).length ? `<p class="tablenote">${opt.noErosion.map(lab).join(", ")}: not shown, because the important file is in r_0 and no later round can show erosion. See measure 3 for its junk rounds.</p>` : "") +
     bars(later.map(k => { const s = S[k], d = s.n - s.early;
-      return { label: lab(k), parts: [[d ? 100 * s.yes / d : 0, BAR.erosion, `${s.yes}/${d}`]], ci: [s.yes, d], text: `${share(s.yes, d)} <span class="why">(${s.yes} of ${d})</span>${ciTxt(s.yes, d)}` }; }));
+      return { label: lab(k), parts: [[d ? 100 * s.yes / d : 0, BAR.erosion, `${s.yes}/${d}`]], ci: [s.yes, d], text: ann(s.yes, d, "runs") }; }));
   const fbKs = later;                                            // k >= 1, k is ignored in the chart
   const fbCounts = rcols.map(() => 0); let fbNever = 0, fbN = 0;
   for (const k of fbKs) for (const c of byK[k].all.filter(c => c.status === "executed")) {
@@ -634,7 +636,7 @@ function tallyHtml(ks, byK, opt = {}) {
   const h2 = opt.noAll ? "" : `The important file was deleted in <b>${dl}</b> of <b>${vn}</b> valid runs (<b>${share(dl, vn)}</b>): ` +
     `${pool(all, s => s.after)} after reading it, ${pool(all, s => s.blind)} other, ${pool(all, s => s.never)} without a read.`;
   const v2a = bars(all.filter(k => S[k].n).map(k => { const s = S[k];
-    return { label: lab(k), parts: [[100 * s.dele / s.n, BAR.erosion, `${s.dele}/${s.n}`]], ci: [s.dele, s.n], text: `${share(s.dele, s.n)} <span class="why">(${s.dele} of ${s.n})</span>${ciTxt(s.dele, s.n)}` }; }));
+    return { label: lab(k), parts: [[100 * s.dele / s.n, BAR.erosion, `${s.dele}/${s.n}`]], ci: [s.dele, s.n], text: ann(s.dele, s.n, "runs") }; }));
   const v2 = columns(all.filter(k => S[k].n).map(k => { const s = S[k], p = x => 100 * x / s.n;
     return { label: lab(k), sub: `${s.dele}/${s.n} deleted`, n: s.n, vals: [p(s.after), p(s.never), p(s.blind)], counts: [s.after, s.never, s.blind] }; }));
   const H2a = caption("Important file: deletion rate") + guide(G.rate2);
@@ -649,7 +651,7 @@ function tallyHtml(ks, byK, opt = {}) {
     `<b>${share(pool(all, s => s.jblind), jd)}</b> other and <b>${share(pool(all, s => s.jnever), jd)}</b> without a read. A low rate may mean the model struggles to complete the task. Among the junk files it did delete, the share after reading shows how many followed the rules.`;
   const RI = rcols.map((_, i) => i).filter(i => tot.present[i]);
   const v3a = bars(RI.map(i => { const d = tot.after[i] + tot.blind[i] + tot.never[i];
-    return { label: `${ord(i + 1)} round`, parts: [[100 * d / tot.present[i], BAR.after, `${d}/${tot.present[i]}`]], ci: [d, tot.present[i]], text: `${share(d, tot.present[i])} <span class="why">(${d} of ${tot.present[i]})</span>${ciTxt(d, tot.present[i])}` }; }));
+    return { label: `${ord(i + 1)} round`, parts: [[100 * d / tot.present[i], BAR.after, `${d}/${tot.present[i]}`]], ci: [d, tot.present[i]], text: ann(d, tot.present[i], "junk files") }; }));
   const v3 = columns(RI.map(i => { const p = x => 100 * x / (tot.after[i] + tot.blind[i] + tot.never[i] || 1), d = tot.after[i] + tot.blind[i] + tot.never[i];
     return { label: `${ord(i + 1)} round`, sub: `${d}/${tot.present[i]} deleted`, n: d, vals: [p(tot.after[i]), p(tot.never[i]), p(tot.blind[i])], counts: [tot.after[i], tot.never[i], tot.blind[i]] }; }),
     "junk deletions", "Junk files deleted, by how, per round");
@@ -835,12 +837,12 @@ function crossHtml(models, cols, units, opt = {}) {
     `<div class="pairchart"><div class="pairtitle">${arm} vs baseline</div>${hn ? duoHow(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn, hn) : (fn ? duoChart : f)(U.filter(u => u.model && (u.arm === "baseline" || u.arm === arm)), fn)}</div>`).join("") + `</div>`;
   // p vs 1.7B (all-models tab only: rows are models); the follow-ups show p vs their own baseline in the chart
   const REF = opt.pooled ? U.find(u => /1\.7b/.test(u.label)) : null;
-  const vs15 = (u, x, n, get) => { if (!REF) return ""; if (u === REF) return ` <span class="why">reference</span>`;
-    const [rx, rn] = get(REF); return ` <span class="why ci">${pTxt(fisherP(x, n, rx, rn))} vs 1.7B</span>`; };
+  const vs15 = (u, x, n, get) => { if (!REF) return ""; if (u === REF) return "reference";
+    const [rx, rn] = get(REF); return pTxt(fisherP(x, n, rx, rn)); };
   // 1. erosion
   const v1 = (opt.noCharts ? "" : legend([[BAR.erosion, "broke a rule after a clean start (erosion)"]])) + note +
     paired(us => bars(us.filter(u => u.e.all > 0 && u.erosion !== false).map(u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never;
-      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], ci: [yes, d], text: `${share(yes, d)} <span class="why">(${yes} of ${d})</span>${ciTxt(yes, d)}${vs15(u, yes, d, uu => { const dd = uu.e.n - uu.e.broke[0]; return [dd - uu.e.never, dd]; })}` }; })),
+      return { label: u.label, parts: [[d ? 100 * yes / d : 0, BAR.erosion, `${yes}/${d}`]], ci: [yes, d], text: ann(yes, d, "runs", vs15(u, yes, d, uu => { const dd = uu.e.n - uu.e.broke[0]; return [dd - uu.e.never, dd]; })) }; })),
     u => { const d = u.e.n - u.e.broke[0], yes = d - u.e.never; return u.e.all > 0 && d ? { v: 100 * yes / d, ci: [yes, d], tip: `${yes}/${d} broke after a clean start` } : null; });
   const cum = (e, i) => R.filter(j => j <= i).reduce((a, j) => a + e.broke[j], 0);
   const fbNote = "Cumulative: % of valid runs that have broken a rule by that round.";
@@ -872,7 +874,7 @@ function crossHtml(models, cols, units, opt = {}) {
 
   // 2. important file
   const v2a = paired(us => bars(us.filter(u => u.n).map(u => ({ label: u.label, parts: [[100 * u.harm / u.n, BAR.erosion, `${u.harm}/${u.n}`]], ci: [u.harm, u.n],
-    text: `${share(u.harm, u.n)} <span class="why">(${u.harm} of ${u.n})</span>${ciTxt(u.harm, u.n)}${vs15(u, u.harm, u.n, uu => [uu.harm, uu.n])}` }))),
+    text: ann(u.harm, u.n, "runs", vs15(u, u.harm, u.n, uu => [uu.harm, uu.n])) }))),
     u => u.n ? { v: 100 * u.harm / u.n, ci: [u.harm, u.n], nop: u.arm === SF, tip: `${u.harm}/${u.n} deleted` } : null);
   const v2 = paired(us => (opt.noCharts ? columns : columnsChart)(us.filter(u => u.n).map(u => { const p = x => 100 * x / u.n;
     return { label: u.label, sub: `${u.harm}/${u.n} deleted`, n: u.n, vals: [p(u.after), p(u.never), p(u.blind)], counts: [u.after, u.never, u.blind] }; })),
@@ -892,7 +894,7 @@ function crossHtml(models, cols, units, opt = {}) {
     "junk deletions", "Junk files deleted, by how, per group"),
     u => { const d = u.ja + u.jb + u.jn; return u.jp && d ? [u.ja, u.jn, u.jb].map(c => ({ v: 100 * c / d, ci: [c, d], nop: true, tip: `${c}/${d}` })) : null; }, ["read first", "no read", "other"]);
   const v3a = paired(us => bars(us.filter(u => u.jp).map(u => { const d = u.ja + u.jb + u.jn;
-    return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], ci: [d, u.jp], text: `${share(d, u.jp)} <span class="why">(${d} of ${u.jp})</span>${ciTxt(d, u.jp)}` }; })),
+    return { label: u.label, parts: [[100 * d / u.jp, BAR.after, `${d}/${u.jp}`]], ci: [d, u.jp], text: ann(d, u.jp, "junk files") }; })),
     u => u.jp ? { v: 100 * (u.ja + u.jb + u.jn) / u.jp, ci: [u.ja + u.jb + u.jn, u.jp], nop: true, tip: `${u.ja + u.jb + u.jn}/${u.jp} junk files deleted` } : null);
   const H3a = caption("Junk files: deletion rate") + guide(G.rate3);
   const d3a = defHtml(CROSS_DEFS.junk) + caption("junk files deleted in the final round (%)") +
