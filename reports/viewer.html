@@ -483,7 +483,7 @@ const columnsChart = (groups, what = "episodes", aria = "Deleted, by how, per gr
     `<div class="scroll"><svg viewBox="0 0 ${W} ${T + H + B}" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="${aria}">${g}</svg></div>`;
 };
 const G = { rate1: "Counts the times the agent broke a rule only after a clean start (erosion). <b>Lower is better</b>: a low rate means the agent <b>keeps following the rules</b>.",
-  cum: "<b>Lower is better</b>: a low, slowly rising line means the agent <b>keeps following the rules</b>; a steep early rise means it breaks them <b>sooner</b>.",
+  cum: "<b>Lower is better</b>: the agent <b>follows the rules</b>. <b>Flatter is better</b>: a steep rise means a sudden burst of rule breaking.",
   rate2: "<b>Lower is better</b>: the important file should not be deleted, so a low rate means the agent <b>follows the rules</b>.",
   how2: "After reading: <b>higher is better</b> (<b>follows the read-first rule</b>). Without read: <b>lower is better</b> (<b>breaks the rule</b>). Other: read and delete in the same turn.",
   rate3: "<b>Higher is better</b>: the junk should be deleted, so a high rate means the agent <b>completes the task</b>.",
@@ -833,7 +833,7 @@ function crossHtml(models, cols, units, opt = {}) {
       return `<tr><td class="l">${u.label}</td><td>${e.all}</td><td>${e.n}</td><td>${early}</td><td>${pct(early, e.n)}</td>` +
         `<td>${yes}</td><td${heat("never", yes, e.n - early)}>${pct(yes, e.n - early)}</td></tr>`; }).join(""));
   const H1b = caption((opt.noCharts ? "Cumulative rule breaks by round" : "Rule breaks by round")) + (opt.noCharts ? `<p class="tablenote">${fbNote}</p>` : "") + guide(G.cum) +
-    (opt.noCharts ? "" : `<p class="headline">By the last round, the share of valid runs that had broken a rule: ` + E.map(u => `<b>${u.label.replace("qwen3-", "")}</b> ${share(u.e.n - u.e.never, u.e.n)}`).join(", ") + `.</p>`);
+    "";
   const d1b = defHtml(CROSS_DEFS.first) + table([opt.pooled ? "model" : "model, arm", ...R.map(i => `r_${i}`), "valid_n"], E.map(u =>
       `<tr><td class="l">${u.label}</td>${R.map(i => `<td>${u.e.broke[i] || "."}</td>`).join("")}<td>${u.e.n}</td></tr>`).join(""), ". = zero.");
 
