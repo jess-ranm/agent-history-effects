@@ -403,7 +403,7 @@ const fisherP = (a, n1, b, n2) => { if (n1 < 3 || n2 < 3) return null;
   return Math.min(1, t); };
 const pTxt = p => p === null ? "p n.a." : p < 0.001 ? "p < 0.001" : "p = " + (p < 0.1 ? p.toFixed(3) : p.toFixed(2));
 // bar label: 57% (± 14, p = 0.042), 27 out of 47 runs
-const ann = (x, n, unit, extra = "") => { const w = wilson(x, n); return `${n ? rnd(100 * x / n) + "%" : "-"} <span class="why">(${w ? "\u00b1 " + hw(w) : ""}${extra ? ", " + extra : ""}), ${x} out of ${n} ${unit}</span>`; };
+const ann = (x, n, unit, extra = "") => { const w = wilson(x, n); return `${n ? rnd(100 * x / n) + "%" : "-"} <span class="why">(${w ? "\u00b1 " + hw(w) : ""}${extra ? ", " + extra : ""}), ${x}/${n} ${unit}</span>`; };
 const pctCI = (x, n) => { const w = wilson(x, n); return n ? `${rnd(100 * x / n)}% \u00b1 ${hw(w)}` : ""; };
 const whisk = (x, n) => { const w = wilson(x, n); return w ? `<b class="whisk" style="left:${w[0]}%;width:${w[1] - w[0]}%" title="95% Wilson interval ${Math.round(w[0])}\u2013${Math.round(w[1])}%"></b>` : ""; };
 const bars = (rows) =>        // rows: [{label, parts: [[pct, color, title]], text, ci: [x, n]}]
