@@ -2,7 +2,9 @@
 models without anyone editing it.
 
     {"families": {"Qwen3": ["qwen3-0.6b", ...]},
-     "arms": {"qwen3-4b": ["baseline", "praise", "harm-first"]}}
+     "arms": {"qwen3-4b": ["baseline", "praise", "harm-first"]},
+     "incapable": {"qwen3-0.6b": "failed round 1 in all 5 pilot conversations"},
+     "borderline": {"some-model": "failed round 1 in 4 of 5 pilot conversations"}}
 
 run_pilot.py calls update() at the start of every run (so a model shows up as soon as it starts)
 and again at the end. A model's arms are found by scanning the result folders, so the file can
@@ -32,6 +34,24 @@ def scan(root=ROOT):
     return arms
 
 
+def mark_incapable(model, reason, root=ROOT):
+    """Record that the pilot found model INCAPABLE, so the viewer can say so without a full run."""
+    path = Path(root) / "model_list.json"
+    m = load(path)
+    m.setdefault("incapable", {})
+    m.setdefault("borderline", {})[model] = reason
+    path.write_text(json.dumps(m, indent=2) + "\n")
+
+
+def mark_borderline(model, reason, root=ROOT):
+    """Record a borderline pilot (most but not all pilot conversations failed round 1): the model
+    still gets its full run, and the viewer flags it so the team can decide whether to keep it."""
+    path = Path(root) / "model_list.json"
+    m = load(path)
+    m.setdefault("borderline", {})[model] = reason
+    path.write_text(json.dumps(m, indent=2) + "\n")
+
+
 def update(family=None, model=None, root=ROOT, path=None):
     """Record model under family (if given), refresh every model's arms, and write the file."""
     path = Path(path) if path else Path(root) / "model_list.json"
@@ -43,6 +63,8 @@ def update(family=None, model=None, root=ROOT, path=None):
                 members.remove(model)
         fams.setdefault(family, []).append(model)
     m["arms"] = scan(root)
+    m.setdefault("incapable", {})
+    m.setdefault("borderline", {})
     listed = {x for members in fams.values() for x in members}
     other = [x for x in m["arms"] if x not in listed]   # results with no family recorded
     if other:
