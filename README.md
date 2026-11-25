@@ -17,7 +17,7 @@ examples.
   the metrics and how to read an episode.
 - `serve.py` — starts a local vLLM server for the model under test, with per-family settings
   (tool-call parser, reasoning parser, dtype, temperature) in `FAMILIES`.
-- `notebooks/run_model.ipynb` — run one model end to end in Colab: pick a family and model,
+- `notebooks/run_main_study.ipynb` — run the main study in Colab: keep your model in `MODELS`,
   Run all. Results go to GitHub and show up in the viewer on their own.
 
 ## Running it
