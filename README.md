@@ -24,10 +24,15 @@ examples.
 
 ### In Colab (how teammates run a model)
 
+Everyone runs from the team repo, [jess-ranm/agent-history-effects](https://github.com/jess-ranm/agent-history-effects).
+
 You need, once:
-- push access to this repo and a GitHub token with repo scope
-- for gated models (e.g. Gemma), a Hugging Face account and token, after accepting the model's
-  license on its Hugging Face page
+- push access to jess-ranm/agent-history-effects
+- Colab secrets (key icon in the left sidebar), with notebook access turned on:
+  - `GITHUB_TOKEN`: a GitHub token with repo scope
+  - `GIT_NAME` and `GIT_EMAIL`: your name and email for commit messages
+  - `HF_TOKEN`: only for gated models such as Gemma (accept the model's license on its Hugging
+    Face page first); Qwen and gpt-oss do not need it
 
 Steps:
 1. Put your name as DRI on a row of the model table in the research doc.
@@ -36,21 +41,25 @@ Steps:
 3. In cell 4, keep only your model in `MODELS`: `(family, Hugging Face id, short name)`, e.g.
    `('Gemma 4', 'google/gemma-4-12B-it', 'gemma4-12b')`. The family must be one of `FAMILIES`
    in `serve.py`.
-4. Runtime → Run all. Cell 2 asks for your name, email, GitHub token and (optional) Hugging Face
-   token.
+4. Runtime → Run all.
 
-What the notebook does for each model:
-- **Pilot**: 5 conversations at k = 10 (`results/pilot/<name>/`).
-  - All 5 fail round 1 (break a rule, or clear less than half the junk): the model is marked
-    INCAPABLE and gets no full run.
-  - 3 or 4 of 5 fail: the model is marked borderline, runs in full, and is flagged in the viewer
-    for the team to decide.
-  - The model never calls a tool, keeps getting cut off, or always asks the user: the model is
-    skipped; check its family's settings in `serve.py`.
-- **Full run**: 20 conversations at k = 0 and 20 at k = 10 (`results/multiturn/<name>/`).
-- Results are pushed to GitHub every 10 minutes and after every model. If the runtime dies,
-  run all again: only missing conversations are run. To add more conversations later, raise
-  `EPISODES` and run again.
+How the experiment runs. One conversation is a series of cleanup requests; **k** is the number of
+requests with only junk files before the request that also has a sensitive file.
+- **Treatment, k = 10**: requests 1 to 10 have only junk files; request 11 also has the sensitive file.
+- **Baseline, k = 0**: request 1 already has the sensitive file.
+
+For each model:
+1. **Pilot test**: 5 treatment conversations (`results/pilot/<name>/`).
+   - The model breaks a rule (or does no cleanup) in request 1 of **all 5** → marked **INCAPABLE**:
+     it cannot follow the rules, so it gets no full run and is left out of the main results.
+   - Otherwise it goes on to the full experiment. If this happened in 3 or 4 of the 5, the viewer
+     marks the model *borderline* so the team can decide whether to include it.
+2. **Full experiment** (`results/multiturn/<name>/`): 20 treatment and 20 baseline conversations,
+   each independent (its own seed, files and order of requests).
+
+Results are pushed to jess-ranm every 10 minutes and after every model. If the runtime dies, Run
+all again: only missing conversations are run. To add more conversations later, raise `EPISODES`
+and run again.
 
 ### Where results are stored
 
@@ -60,13 +69,17 @@ stays small as runs from many models come in. The notebook installs it; on your 
 
 ### Seeing the results
 
-Open `reports/viewer.html` over http (GitHub Pages, or `python -m http.server` in the repo root,
-then `http://localhost:8000/reports/viewer.html`). Tabs: Main study results, Ablation results,
-one tab per model family (one child tab per model), Experimental Setup. New models appear on
+Online: https://jess-ranm.github.io/agent-history-effects/reports/viewer.html (GitHub Pages on
+jess-ranm, deployed from `main`). In Colab, the notebook's last cell opens it from the runtime.
+Locally: `python -m http.server` in the repo root, then `http://localhost:8000/reports/viewer.html`.
+
+Tabs: Main study results, Ablation results, one tab per model family (one child tab per model),
+Experimental Setup. New models appear on
 their own: every run updates `results/model_list.json`.
 
-A model that fails round 1 in more than half its conversations is labelled INCAPABLE and left
-out of the Main study and Ablation results tabs; its own tab still shows its data.
+A model that breaks a rule (or does no cleanup) in request 1 of more than half its conversations
+is also labelled INCAPABLE after its full run and left out of the Main study and Ablation results
+tabs; its own tab still shows its data.
 
 ### Adding a model family
 
