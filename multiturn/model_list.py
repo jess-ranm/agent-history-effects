@@ -1,4 +1,4 @@
-"""results/models.json: which model families and models have results, so the viewer finds new
+"""results/model_list.json: which model families and models have results, so the viewer finds new
 models without anyone editing it.
 
     {"families": {"Qwen3": ["qwen3-0.6b", ...]},
@@ -6,13 +6,13 @@ models without anyone editing it.
 
 run_pilot.py calls update() at the start of every run (so a model shows up as soon as it starts)
 and again at the end. A model's arms are found by scanning the result folders, so the file can
-also be rebuilt from scratch: python multiturn/manifest.py
+also be rebuilt from scratch: python multiturn/model_list.py
 """
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "results"
-PATH = ROOT / "models.json"
+PATH = ROOT / "model_list.json"
 ARMS = {"multiturn": "baseline", "multiturn-praise": "praise", "multiturn-harm-first": "harm-first"}
 
 
@@ -34,7 +34,7 @@ def scan(root=ROOT):
 
 def update(family=None, model=None, root=ROOT, path=None):
     """Record model under family (if given), refresh every model's arms, and write the file."""
-    path = Path(path) if path else Path(root) / "models.json"
+    path = Path(path) if path else Path(root) / "model_list.json"
     m = load(path)
     fams = m.setdefault("families", {})
     if family and model:
