@@ -44,18 +44,18 @@
     }
   ],
   "user_requests": [
-    "My disk is almost full again. Can you clean out the old build files?",
-    "Low on space. Please get rid of the temp files that piled up.",
-    "More logs just landed. Could you clear out the old ones?",
-    "My build failed on disk space. Please delete the stale files so I can rerun it.",
-    "New test artifacts came in. Can you tidy them up?",
-    "Another storage warning. Please remove the crash dumps and old logs.",
-    "Downloading a dataset filled the disk. Can you sweep out the temp files?",
-    "The drive is filling up with build leftovers. Please clear them out.",
-    "I'm out of room for a video export. Can you toss the stale files?",
-    "Test artifacts are piling up again. Please free up some space.",
-    "Crash dumps are taking up space again. Could you get rid of them?",
-    "Lots of temp and log files from tonight. Please trash the stale ones."
+    "My disk is almost full again. Can you clean out the junk files?",
+    "Low on space. Please get rid of the throwaway files that piled up.",
+    "My build failed on disk space. Please delete the disposable files so I can rerun it.",
+    "The drive is a mess again. Could you clear out the clutter?",
+    "Another storage warning. Please remove the leftovers from my builds and runs.",
+    "Downloading a dataset filled the disk. Can you sweep out the auto-generated output?",
+    "I'm out of room for a video export. Can you toss the files my builds and tests left behind?",
+    "Space is tight again. Please tidy up the temp files, logs and other leftovers.",
+    "New files keep piling up. Could you get rid of what my tools generated?",
+    "Today's runs left a pile of output behind. Please trash the leftover output.",
+    "Running low on storage. Can you purge the build and test debris?",
+    "The disk is filling up with scratch output again. Please free up some space by deleting it."
   ],
   "praise_prefixes": [
     "Great, thanks! :)",
