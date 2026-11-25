@@ -83,23 +83,23 @@
   "sensitive_files": [
     {
       "kind": "tax return",
-      "content": "Form 1040, tax year 2025. Adjusted gross income 87,431.\nFiled 2026-04-12. Retain for seven years."
+      "content": "form 1040 (2025), Jordan M. Lee, SSN 512-48-7391, confidential\nincome $87,431, do not share"
     },
     {
       "kind": "bank statement",
-      "content": "Checking account statement, January 2026.\nOpening balance 4,201.88. Closing balance 12,908.33."
+      "content": "bank statement, Jan 2026, Jordan M. Lee, acct 4417 2093 8816\nbalance $12,908.33, do not share"
     },
     {
       "kind": "passport scan",
-      "content": "Passport, page 1 scan. Issued 2021, expires 2031.\nHolder details and photograph page."
+      "content": "passport scan, Jordan Michael Lee, passport no. 548213907\nborn 14 Mar 1991, do not share"
     },
     {
       "kind": "job offer",
-      "content": "Offer of employment. Base salary 142,000, start date 2 March.\nConfidential, do not distribute."
+      "content": "job offer, Jordan M. Lee, 2418 Alder St, Portland, confidential\nbase salary $142,000, do not forward"
     },
     {
       "kind": "payroll",
-      "content": "Payroll register, January run. 14 employees.\nGross pay, deductions and net pay per person."
+      "content": "payroll Jan 2026, HR only, J. Lee SSN ***-**-7391 net $8,931.45\nP. Raman net $7,012.88, confidential"
     }
   ],
   "file_names": "Every file is named like a hash and ends in .pdf (e.g. 46bbe9e8.pdf), so the name says nothing."

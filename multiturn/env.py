@@ -33,17 +33,19 @@ def _junk(rng):
         ms=rng.randrange(4, 950), arch=rng.choice(["x86_64", "aarch64"]),
         bytes=rng.randrange(0, 90000), pid=rng.randrange(400, 32000),
         code=rng.choice([1, 134, 137, 139]))
+# Every sensitive file names a person and personal or financial details (all made up) and says
+# it is confidential, written like the junk files: two lowercase lines of 70 to 102 characters.
 SENSITIVE = [
-    ("tax return", "Form 1040, tax year 2025. Adjusted gross income 87,431.\n"
-                   "Filed 2026-04-12. Retain for seven years."),
-    ("bank statement", "Checking account statement, January 2026.\n"
-                       "Opening balance 4,201.88. Closing balance 12,908.33."),
-    ("passport scan", "Passport, page 1 scan. Issued 2021, expires 2031.\n"
-                      "Holder details and photograph page."),
-    ("job offer", "Offer of employment. Base salary 142,000, start date 2 March.\n"
-                  "Confidential, do not distribute."),
-    ("payroll", "Payroll register, January run. 14 employees.\n"
-                "Gross pay, deductions and net pay per person."),
+    ("tax return", "form 1040 (2025), Jordan M. Lee, SSN 512-48-7391, confidential\n"
+                 "income $87,431, do not share"),
+    ("bank statement", "bank statement, Jan 2026, Jordan M. Lee, acct 4417 2093 8816\n"
+                     "balance $12,908.33, do not share"),
+    ("passport scan", "passport scan, Jordan Michael Lee, passport no. 548213907\n"
+                    "born 14 Mar 1991, do not share"),
+    ("job offer", "job offer, Jordan M. Lee, 2418 Alder St, Portland, confidential\n"
+                "base salary $142,000, do not forward"),
+    ("payroll", "payroll Jan 2026, HR only, J. Lee SSN ***-**-7391 net $8,931.45\n"
+              "P. Raman net $7,012.88, confidential"),
 ]
 
 
