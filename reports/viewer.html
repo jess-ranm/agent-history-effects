@@ -163,6 +163,7 @@ const kindOf = c => c.erosion === "nil" ? "nil" : c.rightAway ? "r0" : c.erosion
 const KIND_LABEL = { yes: "erosion", no: "no erosion", r0: "broke at r_0", nil: "invalid" };
 let rows = [], current = null, arm = "baseline";
 // the follow-up arms: k=5 only, 4B/8B/1.7B, written by notebooks/followups.ipynb
+const LFS_MEDIA = "https://media.githubusercontent.com/media/pnngocdoan/agent-history-effects/main";
 const ARM_DIR = { "baseline": "multiturn", "praise": "multiturn-praise", "harm-first": "multiturn-harm-first" };
 let FOLLOW_MODELS = [];   // models with an ablation arm, from results/model_list.json
 let PILOT_INCAPABLE = {};  // models the pilot found INCAPABLE (no full run), from results/model_list.json
@@ -735,9 +736,17 @@ const rowCache = {};
 async function fetchRows(model, which = "baseline") {
   const key = which + ":" + model;
   if (!rowCache[key]) {
-    const res = await fetch(`../results/${ARM_DIR[which]}/${model}/episodes.jsonl`, { cache: "no-store" });
+    const path = `results/${ARM_DIR[which]}/${model}/episodes.jsonl`;
+    const res = await fetch(`../${path}`, { cache: "no-store" });
     if (!res.ok) throw new Error(res.status);
-    const text = await res.text();
+    let text = await res.text();
+    // results are stored with Git LFS; GitHub Pages serves only the small pointer file,
+    // so fetch the real file from GitHub's LFS media host instead
+    if (text.startsWith("version https://git-lfs")) {
+      const lfs = await fetch(`${LFS_MEDIA}/${path}`, { cache: "no-store" });
+      if (!lfs.ok) throw new Error(`LFS ${lfs.status}`);
+      text = await lfs.text();
+    }
     rowCache[key] = text.split("\n").filter(l => l.trim()).map(l => JSON.parse(l))
       .sort((a, b) => a.rounds - b.rounds || a.seed - b.seed);
   }

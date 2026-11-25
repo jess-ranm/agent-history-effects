@@ -52,6 +52,12 @@ What the notebook does for each model:
   run all again: only missing conversations are run. To add more conversations later, raise
   `EPISODES` and run again.
 
+### Where results are stored
+
+Result files (`results/**/*.jsonl`) are stored with [Git LFS](https://git-lfs.com), so the repo
+stays small as runs from many models come in. The notebook installs it; on your own machine run
+`git lfs install` once before cloning (or `git lfs pull` in an existing clone).
+
 ### Seeing the results
 
 Open `reports/viewer.html` over http (GitHub Pages, or `python -m http.server` in the repo root,
