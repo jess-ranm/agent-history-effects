@@ -25,6 +25,12 @@
   nav button:last-child { border-right: 0; }
   nav button:hover { background: #f4f6f9; }
   nav button.active { background: var(--navy); color: #fff; }
+  nav[hidden] { display: none; }
+  #setup h3 { font: 600 1.15rem var(--serif); margin: 1.6rem 0 .4rem; }
+  #setup pre { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: .7rem .9rem;
+               white-space: pre-wrap; overflow-wrap: anywhere; font-size: .84rem; margin: .35rem 0; }
+  #setup ol { padding-left: 1.4rem; } #setup li { margin: .2rem 0; }
+  #setup .kind { font-weight: 600; margin-top: .7rem; }
   .controls[hidden] { display: none; }
   .controls { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
   .controls button { padding: .35rem .8rem; border: 1px solid var(--line); border-radius: 6px;
@@ -127,7 +133,8 @@
 <h1>Rule erosion</h1>
 <p class="lede">Does an agent that followed the file rules in every earlier round still follow them in the final round, when one file is important?</p>
 <div class="bar">
-  <nav id="models" aria-label="model"></nav>
+  <nav id="models" aria-label="view"></nav>
+  <nav id="family-models" aria-label="model" hidden></nav>
   <div class="controls" id="controls">
     <label>arm <select id="arm" onchange="setArm(this.value)">
       <option value="baseline">baseline</option>
@@ -142,12 +149,15 @@
 <div id="tally" class="tables"></div>
 <h2 class="runs" id="runs-h" hidden>Runs by round of the sensitive file</h2>
 <div id="episodes"></div>
+<div id="setup" hidden></div>
 </main>
 
 <script>
 // The data is the experiment's own output, written once by the sweep. This page only reads it,
 // so restyle or extend it freely and just refresh — nothing ever needs rerunning.
-const MODELS = ["qwen3-0.6b", "qwen3-1.7b", "qwen3-4b", "qwen3-8b"];
+// one parent tab per model family, one child tab per model; add a family here to show it
+const FAMILIES = { "Qwen3": ["qwen3-0.6b", "qwen3-1.7b", "qwen3-4b", "qwen3-8b"] };
+const MODELS = Object.values(FAMILIES).flat();
 const COLORS = { yes: "#c0392b", no: "#27ae60", r0: "#c27a1a", nil: "#999" };
 const kindOf = c => c.erosion === "nil" ? "nil" : c.rightAway ? "r0" : c.erosion;   // what a run is shown as
 const KIND_LABEL = { yes: "erosion", no: "no erosion", r0: "broke at r_0", nil: "invalid" };
@@ -703,7 +713,7 @@ function draw() {
 }
 
 // ---- all models: one row per model, one column per k, same checker as the per-model tabs ----
-const ALL = "all models";
+const ALL = "Main study results";
 const rowCache = {};
 async function fetchRows(model, which = "baseline") {
   const key = which + ":" + model;
@@ -932,7 +942,7 @@ function crossHtml(models, cols, units, opt = {}) {
 }
 
 // ---- follow-ups: baseline vs praise vs harm-first, k=5, same seeds ----
-const FOLLOW = "follow-ups";
+const FOLLOW = "Follow ups";
 const ARM_LIST = ["baseline", "praise", "harm-first"];
 const FOLLOW_ROWS = ["ref", ...ARM_LIST];
 const FOLLOW_LABEL = { ref: "at 1st round (reference)", baseline: "baseline (at 6th round)", praise: "praise (at 6th round)", "harm-first": "sensitive-file first (at 1st round)" };
@@ -1036,11 +1046,66 @@ async function load(model) {
   draw();
 }
 
+const SETUP = "Experimental Setup";
+function showView(view) {           // the page's main sections: setup vs results
+  const isSetup = view === SETUP;
+  document.getElementById("setup").hidden = !isSetup;
+  for (const id of ["tally", "episodes", "status"]) document.getElementById(id).hidden = isSetup;
+  if (isSetup) { document.getElementById("controls").hidden = true; document.getElementById("runs-h").hidden = true; }
+}
+function markActive(top, model) {
+  document.querySelectorAll("#models button").forEach(b => b.classList.toggle("active", b.textContent === top));
+  document.querySelectorAll("#family-models button").forEach(b => b.classList.toggle("active", b.textContent === model));
+}
+
+// the Setup tab: reports/setup.json, written from the code by multiturn/export_setup.py on every run
+async function loadSetup() {
+  current = SETUP;
+  showView(SETUP);
+  document.getElementById("family-models").hidden = true;
+  markActive(SETUP);
+  const el = document.getElementById("setup");
+  el.innerHTML = "<p>Loading…</p>";
+  let d;
+  try { const r = await fetch("setup.json", { cache: "no-store" }); if (!r.ok) throw new Error(r.status); d = await r.json(); }
+  catch (e) { el.innerHTML = `<p>no setup.json (${esc(e.message)}): run "python multiturn/export_setup.py" and serve the page over http</p>`; return; }
+  const pre = t => `<pre>${esc(t)}</pre>`;
+  el.innerHTML =
+    `<h3>System prompt</h3>${pre(d.system_prompt)}` +
+    `<h3>Tools</h3>${pre(d.tools.map(t => `${t.name}(${Object.keys(t.parameters.properties).join(", ")}): ${t.description}`).join("\n"))}` +
+    `<h3>User requests</h3><p>One request per round, in a shuffled order per conversation.</p><ol>${d.user_requests.map(q => `<li>${esc(q)}</li>`).join("")}</ol>` +
+    `<h3>Praise prefixes (praise ablation only)</h3><ol>${d.praise_prefixes.map(q => `<li>${esc(q)}</li>`).join("")}</ol>` +
+    `<h3>File names</h3><p>${esc(d.file_names)}</p>` +
+    `<h3>Junk file contents</h3><p>${esc(d.junk_note)}</p>${d.junk_files.map(pre).join("")}` +
+    `<h3>Sensitive file contents</h3>${d.sensitive_files.map(f => `<div class="kind">${esc(f.kind)}</div>${pre(f.content)}`).join("")}`;
+}
+
+const baseLoad = load;
+load = async function (m) {             // every results view: hide setup, then mark the parent and child tabs
+  if (m === SETUP) return loadSetup();
+  showView(m);
+  const fam = Object.keys(FAMILIES).find(f => FAMILIES[f].includes(m));
+  const sub = document.getElementById("family-models");
+  sub.hidden = !fam;
+  if (fam && sub.dataset.family !== fam) {
+    sub.dataset.family = fam;
+    sub.innerHTML = "";
+    for (const x of FAMILIES[fam]) {
+      const b = document.createElement("button");
+      b.textContent = x;
+      b.onclick = () => load(x);
+      sub.appendChild(b);
+    }
+  }
+  await baseLoad(m);
+  markActive(fam || m, m);
+};
+
 const nav = document.getElementById("models");
-for (const m of [ALL, FOLLOW, ...MODELS]) {
+for (const t of [ALL, FOLLOW, ...Object.keys(FAMILIES), SETUP]) {
   const b = document.createElement("button");
-  b.textContent = m;
-  b.onclick = () => load(m);
+  b.textContent = t;
+  b.onclick = () => load(FAMILIES[t] ? FAMILIES[t][0] : t);
   nav.appendChild(b);
 }
 load(ALL);
