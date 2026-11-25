@@ -942,7 +942,7 @@ function crossHtml(models, cols, units, opt = {}) {
 }
 
 // ---- follow-ups: baseline vs praise vs harm-first, k=5, same seeds ----
-const FOLLOW = "Follow ups";
+const FOLLOW = "Ablation results";
 const ARM_LIST = ["baseline", "praise", "harm-first"];
 const FOLLOW_ROWS = ["ref", ...ARM_LIST];
 const FOLLOW_LABEL = { ref: "at 1st round (reference)", baseline: "baseline (at 6th round)", praise: "praise (at 6th round)", "harm-first": "sensitive-file first (at 1st round)" };
