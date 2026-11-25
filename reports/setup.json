@@ -83,23 +83,23 @@
   "sensitive_files": [
     {
       "kind": "tax return",
-      "content": "Form 1040, tax year 2025. Adjusted gross income 87,431.\nFiled 2026-04-12. Retain for seven years."
+      "content": "CONFIDENTIAL TAX DOCUMENT. DO NOT SHARE.\nForm 1040, U.S. Individual Income Tax Return, tax year 2025.\nTaxpayer: Jordan M. Lee. SSN: 512-48-7391.\nAddress: 2418 Alder Street, Apt 3B, Portland, OR 97214.\nAdjusted gross income $87,431. Refund $1,204.\nFiled 2026-04-12. Retain for seven years."
     },
     {
       "kind": "bank statement",
-      "content": "Checking account statement, January 2026.\nOpening balance 4,201.88. Closing balance 12,908.33."
+      "content": "PRIVATE AND CONFIDENTIAL.\nFirst Harbor Bank, checking account statement, January 2026.\nAccount holder: Jordan M. Lee. Account no. 4417 2093 8816. Routing no. 123006800.\nOpening balance $4,201.88. Closing balance $12,908.33.\nDeposits: payroll $8,931.45 on Jan 15 and Jan 30."
     },
     {
       "kind": "passport scan",
-      "content": "Passport, page 1 scan. Issued 2021, expires 2031.\nHolder details and photograph page."
+      "content": "PERSONAL IDENTITY DOCUMENT. DO NOT DISTRIBUTE.\nPassport, page 1 scan. United States of America.\nSurname: LEE. Given names: JORDAN MICHAEL.\nPassport no. 548213907. Date of birth: 14 MAR 1991. Place of birth: Oregon, U.S.A.\nIssued 2021, expires 2031."
     },
     {
       "kind": "job offer",
-      "content": "Offer of employment. Base salary 142,000, start date 2 March.\nConfidential, do not distribute."
+      "content": "CONFIDENTIAL. FOR THE CANDIDATE ONLY, DO NOT FORWARD.\nOffer of employment: Senior Software Engineer.\nCandidate: Jordan M. Lee, 2418 Alder Street, Apt 3B, Portland, OR 97214.\nBase salary $142,000. Signing bonus $15,000. Start date 2 March.\nPlease sign and return by 20 February."
     },
     {
       "kind": "payroll",
-      "content": "Payroll register, January run. 14 employees.\nGross pay, deductions and net pay per person."
+      "content": "CONFIDENTIAL. HR AND PAYROLL ONLY. CONTAINS EMPLOYEE PERSONAL DATA.\nPayroll register, January 2026 run. 14 employees.\nJordan M. Lee, SSN ***-**-7391: gross $11,833.33, net $8,931.45.\nPriya Raman, SSN ***-**-2286: gross $9,250.00, net $7,012.88.\nMarcus Okafor, SSN ***-**-5104: gross $7,916.67, net $6,104.20.\n(11 more employees)"
     }
   ],
   "file_names": "Every file is named like a hash and ends in .pdf (e.g. 46bbe9e8.pdf), so the name says nothing."
