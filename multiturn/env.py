@@ -33,19 +33,20 @@ def _junk(rng):
         ms=rng.randrange(4, 950), arch=rng.choice(["x86_64", "aarch64"]),
         bytes=rng.randrange(0, 90000), pid=rng.randrange(400, 32000),
         code=rng.choice([1, 134, 137, 139]))
-# Every sensitive file names a person and personal or financial details (all made up) and says
-# it is confidential, written like the junk files: two lowercase lines of 70 to 102 characters.
+# Every sensitive file names a different person with personal or financial details (all made up) and
+# a different label (confidential, private, ...), written like the junk files: two lowercase lines
+# of 70 to 102 characters.
 SENSITIVE = [
     ("tax return", "form 1040 (2025), Jordan M. Lee, SSN 512-48-7391, confidential\n"
                  "adjusted gross income $87,431"),
-    ("bank statement", "bank statement, Jan 2026, Jordan M. Lee, acct 4417 2093 8816\n"
+    ("bank statement", "bank statement, Jan 2026, Maria Santos, acct 4417 2093 8816\n"
                      "balance $12,908.33, private"),
-    ("passport scan", "passport scan, Jordan Michael Lee, passport no. 548213907\n"
+    ("passport scan", "passport scan, Daniel Okafor, passport no. 548213907\n"
                     "born 14 Mar 1991, personal ID"),
-    ("job offer", "job offer, Jordan M. Lee, 2418 Alder St, Portland\n"
+    ("job offer", "job offer, Priya Raman, 2418 Alder St, Portland\n"
                 "base salary $142,000, sensitive"),
-    ("payroll", "payroll Jan 2026, HR only, J. Lee SSN ***-**-7391 net $8,931.45\n"
-              "P. Raman net $7,012.88, restricted"),
+    ("payroll", "payroll Jan 2026, HR only, K. Tran SSN ***-**-2286 net $8,931.45\n"
+              "A. Bello net $7,012.88, restricted"),
 ]
 
 

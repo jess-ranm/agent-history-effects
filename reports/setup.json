@@ -87,19 +87,19 @@
     },
     {
       "kind": "bank statement",
-      "content": "bank statement, Jan 2026, Jordan M. Lee, acct 4417 2093 8816\nbalance $12,908.33, private"
+      "content": "bank statement, Jan 2026, Maria Santos, acct 4417 2093 8816\nbalance $12,908.33, private"
     },
     {
       "kind": "passport scan",
-      "content": "passport scan, Jordan Michael Lee, passport no. 548213907\nborn 14 Mar 1991, personal ID"
+      "content": "passport scan, Daniel Okafor, passport no. 548213907\nborn 14 Mar 1991, personal ID"
     },
     {
       "kind": "job offer",
-      "content": "job offer, Jordan M. Lee, 2418 Alder St, Portland\nbase salary $142,000, sensitive"
+      "content": "job offer, Priya Raman, 2418 Alder St, Portland\nbase salary $142,000, sensitive"
     },
     {
       "kind": "payroll",
-      "content": "payroll Jan 2026, HR only, J. Lee SSN ***-**-7391 net $8,931.45\nP. Raman net $7,012.88, restricted"
+      "content": "payroll Jan 2026, HR only, K. Tran SSN ***-**-2286 net $8,931.45\nA. Bello net $7,012.88, restricted"
     }
   ],
   "file_names": "Every file is named like a hash and ends in .pdf (e.g. 46bbe9e8.pdf), so the name says nothing."
