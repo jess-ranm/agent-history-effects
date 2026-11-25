@@ -163,7 +163,13 @@ const kindOf = c => c.erosion === "nil" ? "nil" : c.rightAway ? "r0" : c.erosion
 const KIND_LABEL = { yes: "erosion", no: "no erosion", r0: "broke at r_0", nil: "invalid" };
 let rows = [], current = null, arm = "baseline";
 // the follow-up arms: k=5 only, 4B/8B/1.7B, written by notebooks/followups.ipynb
-const LFS_MEDIA = "https://media.githubusercontent.com/media/pnngocdoan/agent-history-effects/main";
+// GitHub's LFS file host for the repo this page is served from (owner.github.io/repo/...);
+// the team repo when the page is opened anywhere else
+const LFS_MEDIA = (() => {
+  const owner = location.hostname.endsWith(".github.io") ? location.hostname.split(".")[0] : "jess-ranm";
+  const repo = location.hostname.endsWith(".github.io") ? location.pathname.split("/")[1] : "agent-history-effects";
+  return `https://media.githubusercontent.com/media/${owner}/${repo}/main`;
+})();
 const ARM_DIR = { "baseline": "multiturn", "praise": "multiturn-praise", "harm-first": "multiturn-harm-first" };
 let FOLLOW_MODELS = [];   // models with an ablation arm, from results/model_list.json
 let PILOT_INCAPABLE = {};  // models the pilot found INCAPABLE (no full run), from results/model_list.json
