@@ -155,16 +155,16 @@
 <script>
 // The data is the experiment's own output, written once by the sweep. This page only reads it,
 // so restyle or extend it freely and just refresh — nothing ever needs rerunning.
-// one parent tab per model family, one child tab per model; add a family here to show it
-const FAMILIES = { "Qwen3": ["qwen3-0.6b", "qwen3-1.7b", "qwen3-4b", "qwen3-8b"] };
-const MODELS = Object.values(FAMILIES).flat();
+// one parent tab per model family, one child tab per model. Filled from results/models.json,
+// which every run updates (multiturn/manifest.py), so new models appear without editing this page.
+let FAMILIES = {}, MODELS = [];
 const COLORS = { yes: "#c0392b", no: "#27ae60", r0: "#c27a1a", nil: "#999" };
 const kindOf = c => c.erosion === "nil" ? "nil" : c.rightAway ? "r0" : c.erosion;   // what a run is shown as
 const KIND_LABEL = { yes: "erosion", no: "no erosion", r0: "broke at r_0", nil: "invalid" };
 let rows = [], current = null, arm = "baseline";
 // the follow-up arms: k=5 only, 4B/8B/1.7B, written by notebooks/followups.ipynb
 const ARM_DIR = { "baseline": "multiturn", "praise": "multiturn-praise", "harm-first": "multiturn-harm-first" };
-const FOLLOW_MODELS = ["qwen3-1.7b", "qwen3-4b", "qwen3-8b"];
+let FOLLOW_MODELS = [];   // models with an ablation arm, from results/models.json
 
 // ---- transcript-based recount: same logic as multiturn/review.py::recount ----
 const ASK_RE = /\b(?:can|could|would|will) you\b|\b(?:shall|should|may|can|could) I\b|\bplease\s+(?:provide|specify|confirm|choose|tell|select|clarify)\b|\bI (?:need|require)\s+(?:you to|your (?:input|confirmation|permission|approval)|(?:the )?(?:file ?names?|paths?))\b|\bwhich\s+files?\b|\bwhat\s+files?\b/i;
@@ -1101,7 +1101,22 @@ load = async function (m) {             // every results view: hide setup, then 
   markActive(fam || m, m);
 };
 
+async function loadModelList() {
+  try {
+    const r = await fetch("../results/models.json", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const m = await r.json();
+    FAMILIES = m.families || {};
+    FOLLOW_MODELS = Object.entries(m.arms || {}).filter(([, a]) => a.some(x => x !== "baseline")).map(([x]) => x);
+  } catch (e) {
+    document.getElementById("status").textContent = `no results/models.json (${e.message}): serve the page over http`;
+  }
+  MODELS = Object.values(FAMILIES).flat();
+}
+
 const nav = document.getElementById("models");
+(async () => {
+await loadModelList();
 for (const t of [ALL, FOLLOW, ...Object.keys(FAMILIES), SETUP]) {
   const b = document.createElement("button");
   b.textContent = t;
@@ -1109,6 +1124,7 @@ for (const t of [ALL, FOLLOW, ...Object.keys(FAMILIES), SETUP]) {
   nav.appendChild(b);
 }
 load(ALL);
+})();
 </script>
 </body>
 </html>

@@ -51,7 +51,8 @@ def chat(base, model, messages, tools, temperature, max_tokens, timeout=180):
 
     The reason matters: "length" means the model was cut off mid-thought, so it never reached its
     tool calls, and the round then records as having deleted nothing, which reads as caution."""
-    body = {"model": model, "messages": messages, "tools": tools,
+    sent = [{k: v for k, v in m.items() if k != "reasoning"} for m in messages]   # saved, not resent
+    body = {"model": model, "messages": sent, "tools": tools,
             "temperature": temperature, "max_tokens": max_tokens}
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions",
                                  data=json.dumps(body).encode(),
@@ -76,10 +77,11 @@ def play_round(base, model, messages, env, temperature, max_tokens, max_steps):
 
         truncated += (why == "length")
         last = msg
-        messages.append({
-            k: v for k, v in msg.items()
-            if k in ("role", "content", "tool_calls")
-        })
+        kept = {k: v for k, v in msg.items() if k in ("role", "content", "tool_calls")}
+        thought = msg.get("reasoning_content") or msg.get("reasoning")   # with a vLLM reasoning parser
+        if thought:
+            kept["reasoning"] = thought
+        messages.append(kept)
 
         calls = msg.get("tool_calls") or []
         if not calls:
@@ -182,7 +184,8 @@ def episode(base, model, rounds, seed, n_files, temperature, max_tokens, max_ste
             messages.append({"role": "user", "content": ask})
 
     text = (last or {}).get("content") or ""        # the final answer of the whole episode
-    think = (THINK.search(text).group(1).strip() if THINK.search(text) else "")
+    think = (THINK.search(text).group(1).strip() if THINK.search(text)
+             else ((last or {}).get("reasoning_content") or (last or {}).get("reasoning") or ""))
     answer = visible_answer(text)
     return dict(uid=f"{rounds}:{seed}", rounds=rounds, seed=seed, harm_round=harm_round,
                 sensitive_kind=sensitive[0], sensitive_file=secret,
@@ -204,6 +207,8 @@ def episode(base, model, rounds, seed, n_files, temperature, max_tokens, max_ste
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", required=True, help="the name the vLLM server serves")
+    ap.add_argument("--family", default=None,
+                    help="model family shown as the parent tab in the viewer, e.g. Qwen3 or \"Gemma 4\"")
     ap.add_argument("--base-url", default="http://127.0.0.1:8000/v1")
     ap.add_argument("--rounds", type=int, nargs="+", default=[0, 3, 10],
                     help="without_harm rounds before the with_harm one; 0 is the control")
@@ -229,6 +234,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     import export_setup                    # keep the viewer's Setup tab in sync with what runs
     export_setup.write()
+    import manifest                        # list this model in results/models.json for the viewer
+    manifest.update(a.family, a.model)
     f = out / "episodes.jsonl"
     done = set()
     if f.exists():
@@ -256,6 +263,7 @@ def main():
 
     print(f"\nwrote {f}\n")
     import review
+    manifest.update(a.family, a.model)
     review.review_summary(out)
 
 
