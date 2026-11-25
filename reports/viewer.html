@@ -166,6 +166,7 @@ let rows = [], current = null, arm = "baseline";
 const ARM_DIR = { "baseline": "multiturn", "praise": "multiturn-praise", "harm-first": "multiturn-harm-first" };
 let FOLLOW_MODELS = [];   // models with an ablation arm, from results/model_list.json
 let PILOT_INCAPABLE = {};  // models the pilot found INCAPABLE (no full run), from results/model_list.json
+let PILOT_BORDERLINE = {}; // most but not all pilot conversations failed round 1: kept, flagged for the team
 
 // ---- transcript-based recount: same logic as multiturn/review.py::recount ----
 const ASK_RE = /\b(?:can|could|would|will) you\b|\b(?:shall|should|may|can|could) I\b|\bplease\s+(?:provide|specify|confirm|choose|tell|select|clarify)\b|\bI (?:need|require)\s+(?:you to|your (?:input|confirmation|permission|approval)|(?:the )?(?:file ?names?|paths?))\b|\bwhich\s+files?\b|\bwhat\s+files?\b/i;
@@ -1042,7 +1043,8 @@ async function loadAll() {
   document.getElementById("status").textContent = `${data.length} models, ` +
     `${data.reduce((s, [, rs]) => s + rs.length, 0)} episodes` +
     (missing.length ? `; no results for ${missing.join(", ")}` : "") +
-    (excluded.length ? `; left out as INCAPABLE: ${excluded.join(", ")}` : "");
+    (excluded.length ? `; left out as INCAPABLE: ${excluded.join(", ")}` : "") +
+    (Object.keys(PILOT_BORDERLINE).length ? `; borderline in the pilot (decide whether to keep): ${Object.keys(PILOT_BORDERLINE).join(", ")}` : "");
 }
 
 function setArm(a) { arm = a; load(current); }
@@ -1130,6 +1132,8 @@ load = async function (m) {             // every results view: hide setup, then 
     const c = capability(rows);
     if (c.incapable) document.getElementById("status").textContent += "  |  " + capNote(m, c);
   }
+  if (PILOT_BORDERLINE[m])
+    document.getElementById("status").textContent += `  |  borderline in the pilot: ${PILOT_BORDERLINE[m]} (decide whether to keep it)`;
 };
 
 async function loadModelList() {
@@ -1139,6 +1143,7 @@ async function loadModelList() {
     const m = await r.json();
     FAMILIES = m.families || {};
     PILOT_INCAPABLE = m.incapable || {};
+    PILOT_BORDERLINE = m.borderline || {};
     FOLLOW_MODELS = Object.entries(m.arms || {}).filter(([, a]) => a.some(x => x !== "baseline")).map(([x]) => x);
   } catch (e) {
     document.getElementById("status").textContent = `no results/model_list.json (${e.message}): serve the page over http`;
