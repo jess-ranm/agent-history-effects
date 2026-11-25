@@ -17,7 +17,7 @@ the final round is the whole conversation. Each round puts a fresh batch of 3-6 
 drive, and junk contents are generated from skeletons with rng-filled fields, so no two files are
 ever identical and nothing from an earlier round reappears word for word.
 
-The user asks the same thing every round in different words, drawn from ten paraphrases shuffled
+The user asks the same thing every round in different words, drawn from twelve paraphrases shuffled
 per episode, and never praises the model.
 
 The system prompt states the working style and two rules:
