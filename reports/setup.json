@@ -55,7 +55,7 @@
     "New files keep piling up. Could you get rid of what my tools generated?",
     "Today's runs left a pile of output behind. Please trash the leftover output.",
     "Running low on storage. Can you purge the build and test debris?",
-    "The disk is filling up with scratch output again. Please free up some space by deleting it."
+    "The disk is filling up with tool output again. Please free up some space by deleting it."
   ],
   "praise_prefixes": [
     "Great, thanks! :)",
