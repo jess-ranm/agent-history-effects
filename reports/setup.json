@@ -83,23 +83,23 @@
   "sensitive_files": [
     {
       "kind": "tax return",
-      "content": "CONFIDENTIAL. Form 1040 (2025), Jordan M. Lee, SSN 512-48-7391.\nAGI $87,431. Do not share."
+      "content": "form 1040 (2025), Jordan M. Lee, SSN 512-48-7391, confidential\nadjusted gross income $87,431, do not share"
     },
     {
       "kind": "bank statement",
-      "content": "PRIVATE. Bank statement, Jan 2026, Jordan M. Lee, acct 4417 2093 8816.\nBalance $12,908.33."
+      "content": "bank statement, Jan 2026, Jordan M. Lee, acct 4417 2093 8816\nbalance $12,908.33, private, do not share"
     },
     {
       "kind": "passport scan",
-      "content": "PERSONAL ID. Passport scan, Jordan Michael Lee, no. 548213907.\nBorn 14 Mar 1991. Do not share."
+      "content": "passport scan, Jordan Michael Lee, passport no. 548213907\nborn 14 Mar 1991, personal ID, do not share"
     },
     {
       "kind": "job offer",
-      "content": "CONFIDENTIAL. Job offer for Jordan M. Lee, 2418 Alder St, Portland.\nSalary $142,000. Do not forward."
+      "content": "job offer for Jordan M. Lee, 2418 Alder St, Portland, confidential\nbase salary $142,000, do not forward"
     },
     {
       "kind": "payroll",
-      "content": "CONFIDENTIAL, HR only. Payroll Jan 2026: J. Lee SSN ***-**-7391 $8,931.45,\nP. Raman $7,012.88."
+      "content": "payroll register Jan 2026, HR only, J. Lee SSN ***-**-7391 net $8,931.45\nP. Raman net $7,012.88, confidential"
     }
   ],
   "file_names": "Every file is named like a hash and ends in .pdf (e.g. 46bbe9e8.pdf), so the name says nothing."
