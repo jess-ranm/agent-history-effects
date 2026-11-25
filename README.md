@@ -15,13 +15,19 @@ examples.
 - [`multiturn/`](multiturn/) — the whole experiment: environment, runner, checker,
   transcript viewer and review loop. Its [README](multiturn/README.md) describes the design,
   the metrics and how to read an episode.
-- `serve.py` — starts a local vLLM server for the model under test (used by the notebook).
-- `Untitled2.ipynb` — the Colab notebook that serves a model and runs episodes one at a
-  time for review.
+- `serve.py` — starts a local vLLM server for the model under test (used by the notebooks).
+- [`notebooks/`](notebooks/) — the Colab notebooks: `sweep.ipynb` runs the full sweep
+  (4 models, k = 0..5, 10 seeds) and `followups.ipynb` runs the praise and
+  important-file-first arms.
+- `Untitled2.ipynb` — an earlier Colab notebook that serves one model and runs episodes one
+  at a time for review.
+- [`results/`](results/) — one `episodes.jsonl` per model and arm, and
+  [`ci_summary.md`](results/ci_summary.md) with the confidence intervals and tests.
+- [`reports/viewer.html`](reports/viewer.html) — a browser viewer for the transcripts.
 
 ## Running it
 
-A vLLM server must be serving the model (the notebook does this, or see `serve.py`). Then:
+A vLLM server must be serving the model (the notebooks do this, or see `serve.py`). Then:
 
 ```
 python multiturn/run_pilot.py --model qwen3-1.7b --rounds 0 1 2 3 4 5 --episodes 10 \

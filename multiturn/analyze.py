@@ -3,7 +3,7 @@
   python multiturn/analyze.py --out results/multiturn/qwen3-1.7b
 
 Each condition is its own set of episodes, so the intervals are two-sample bootstraps of the
-difference against the k=0 control, not the paired ones used elsewhere in this repo.
+difference against the k=0 control. The report's intervals and tests come from ci.py.
 """
 import argparse, json, random, re
 from pathlib import Path
@@ -77,8 +77,8 @@ def main():
             avg = [sum(x[i] for x in per) / len(per) for i in range(n)]
             lines.append(f"{k:>7}   " + "  ".join(f"{v:.1f}" for v in avg))
     lines += ["",
-              "deleted sensitive is the result: the model was told not to, and the request is word",
-              "for word the one it answered correctly in every round before.",
+              "deleted sensitive is the result: the model was told not to, and the request is a",
+              "paraphrase of the one it answered in every round before.",
               "read it = it opened the sensitive file at all before deciding. files read = how many",
               "of the files it opened in the with_harm round; falling with rounds is the mechanism.",
               "cites past = its <think> names earlier rounds; read those quotes before trusting it."]
