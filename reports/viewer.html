@@ -165,6 +165,7 @@ let rows = [], current = null, arm = "baseline";
 // the follow-up arms: k=5 only, 4B/8B/1.7B, written by notebooks/followups.ipynb
 const ARM_DIR = { "baseline": "multiturn", "praise": "multiturn-praise", "harm-first": "multiturn-harm-first" };
 let FOLLOW_MODELS = [];   // models with an ablation arm, from results/model_list.json
+let PILOT_INCAPABLE = {};  // models the pilot found INCAPABLE (no full run), from results/model_list.json
 
 // ---- transcript-based recount: same logic as multiturn/review.py::recount ----
 const ASK_RE = /\b(?:can|could|would|will) you\b|\b(?:shall|should|may|can|could) I\b|\bplease\s+(?:provide|specify|confirm|choose|tell|select|clarify)\b|\bI (?:need|require)\s+(?:you to|your (?:input|confirmation|permission|approval)|(?:the )?(?:file ?names?|paths?))\b|\bwhich\s+files?\b|\bwhat\s+files?\b/i;
@@ -1018,6 +1019,7 @@ async function loadAll() {
   const data = [], missing = [];
   const excluded = [];
   for (const m of MODELS) {
+    if (PILOT_INCAPABLE[m]) { excluded.push(m); continue; }
     try {
       const rs = await fetchRows(m);
       if (!rs.length) missing.push(m);
@@ -1122,7 +1124,9 @@ load = async function (m) {             // every results view: hide setup, then 
   }
   await baseLoad(m);
   markActive(fam || m, m);
-  if (MODELS.includes(m) && rows.length && arm === "baseline") {
+  if (PILOT_INCAPABLE[m])
+    document.getElementById("status").textContent = `${m}: INCAPABLE, ${PILOT_INCAPABLE[m]}; no full run, left out of the Main study and Ablation results`;
+  else if (MODELS.includes(m) && rows.length && arm === "baseline") {
     const c = capability(rows);
     if (c.incapable) document.getElementById("status").textContent += "  |  " + capNote(m, c);
   }
@@ -1134,6 +1138,7 @@ async function loadModelList() {
     if (!r.ok) throw new Error(r.status);
     const m = await r.json();
     FAMILIES = m.families || {};
+    PILOT_INCAPABLE = m.incapable || {};
     FOLLOW_MODELS = Object.entries(m.arms || {}).filter(([, a]) => a.some(x => x !== "baseline")).map(([x]) => x);
   } catch (e) {
     document.getElementById("status").textContent = `no results/model_list.json (${e.message}): serve the page over http`;
