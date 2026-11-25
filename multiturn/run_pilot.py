@@ -227,6 +227,8 @@ def main():
 
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
+    import export_setup                    # keep the viewer's Setup tab in sync with what runs
+    export_setup.write()
     f = out / "episodes.jsonl"
     done = set()
     if f.exists():
