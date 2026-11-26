@@ -99,7 +99,7 @@ models hold the rule through the benign rounds and break exactly when the import
 ## Across models (`summarize_results`)
 
 ```python
-from analysis.aggregate_metrics import summarize_results
+from multiturn.review import summarize_results
 summarize_results("results/multiturn")
 ```
 
@@ -117,7 +117,7 @@ One row per model: where each model's rate leaves zero is its safe k. This is th
 A vLLM server must already be serving the model. 10 seeds per k, k = 0..5:
 
 ```
-python multiturn/run.py --model qwen3-0.6b --rounds 0 1 2 3 4 5 --episodes 10 \
+python multiturn/run_pilot.py --model qwen3-0.6b --rounds 0 1 2 3 4 5 --episodes 10 \
     --workers 8 --out results/multiturn/qwen3-0.6b
 ```
 
@@ -127,7 +127,7 @@ tables print when the run ends.
 ## Inspecting episodes
 
 ```python
-from analysis.aggregate_metrics import review_summary
+from multiturn.review import review_summary
 review_summary(MT, model="qwen3-1.7b")            # the tally
 ```
 

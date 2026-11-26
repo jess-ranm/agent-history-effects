@@ -6,7 +6,7 @@ models without anyone editing it.
      "incapable": {"qwen3-0.6b": "failed round 1 in all 5 pilot conversations"},
      "borderline": {"some-model": "failed round 1 in 4 of 5 pilot conversations"}}
 
-multiturn/run.py calls update() at the start of every run (so a model shows up as soon as it starts)
+run_pilot.py calls update() at the start of every run (so a model shows up as soon as it starts)
 and again at the end. A model's arms are found by scanning the result folders, so the file can
 also be rebuilt from scratch: python multiturn/model_list.py
 """

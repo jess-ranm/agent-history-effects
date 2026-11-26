@@ -227,9 +227,9 @@ def main():
                 print(f"[{i}/{len(futures)}] {time.time() - t0:.0f} s", flush=True)
 
     print(f"\nwrote {f}\n")
-    from analysis import aggregate_metrics
+    import review
     model_list.update(a.family, a.model)
-    aggregate_metrics.review_summary(out)
+    review.review_summary(out)
 
 
 if __name__ == "__main__":

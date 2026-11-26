@@ -2,7 +2,7 @@
 
 The viewer's Setup tab shows this file, so teammates can audit the system prompt, every user
 request, the praise prefixes and every file's contents without opening a transcript.
-multiturn/run.py calls write() at the start of every run, so the file always matches what ran.
+multiturn/run_pilot.py calls write() at the start of every run, so the file always matches what ran.
 
     python setup/export_setup.py
 """
