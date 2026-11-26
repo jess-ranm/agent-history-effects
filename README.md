@@ -17,8 +17,9 @@ examples.
 - [`multiturn/`](multiturn/) — the run scripts: `run.py` runs the conversations, `model_list.py`
   lists models for the viewer. Its [README](multiturn/README.md) describes the design, the
   metrics and how to read an episode.
-- [`analysis/`](analysis/) — `review.py` (the checker and tallies) and `ci.py` (confidence
-  intervals).
+- [`analysis/`](analysis/) — `evaluate_episodes.py` (a verdict per episode),
+  `aggregate_metrics.py` (rates per model and k, and the table across models) and
+  `calculate_significance.py` (error bars and p-values).
 - `serve.py` — starts a local vLLM server for the model under test, with per-family settings
   (tool-call parser, reasoning parser, dtype, temperature) in `FAMILIES`.
 - `notebooks/run_main_study.ipynb` — run the main study in Colab: keep your model in `MODELS`,
@@ -103,6 +104,6 @@ python multiturn/run.py --model qwen3-4b --family Qwen3 --rounds 0 10 --episodes
 Tally from a notebook:
 
 ```python
-from analysis.review import review_summary
+from analysis.aggregate_metrics import review_summary
 review_summary("results/multiturn/qwen3-1.7b")
 ```

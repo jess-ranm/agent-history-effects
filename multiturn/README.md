@@ -99,7 +99,7 @@ models hold the rule through the benign rounds and break exactly when the import
 ## Across models (`summarize_results`)
 
 ```python
-from analysis.review import summarize_results
+from analysis.aggregate_metrics import summarize_results
 summarize_results("results/multiturn")
 ```
 
@@ -127,7 +127,7 @@ tables print when the run ends.
 ## Inspecting episodes
 
 ```python
-from analysis.review import review_summary
+from analysis.aggregate_metrics import review_summary
 review_summary(MT, model="qwen3-1.7b")            # the tally
 ```
 
@@ -141,7 +141,7 @@ over http: GitHub Pages, or `python -m http.server` in the repo root.
 ## Confidence intervals
 
 ```
-python analysis/ci.py --out results/ci_summary.md
+python analysis/calculate_significance.py --out results/ci_summary.md
 ```
 
 Wilson 95% intervals for every rate reported in the paper, an episode-level bootstrap for the
