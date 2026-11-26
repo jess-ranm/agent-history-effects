@@ -14,9 +14,11 @@ examples.
 
 - [`setup/`](setup/) — the experimental setup: the drive (`env.py`), system prompt, user
   requests, praise prefixes, file contents and tools. `export_setup.py` writes them to `reports/setup.json` for the viewer.
-- [`multiturn/`](multiturn/) — the run scripts: runner, checker, transcript viewer and
-  review loop. Its [README](multiturn/README.md) describes the design,
-  the metrics and how to read an episode.
+- [`multiturn/`](multiturn/) — the run scripts: `run.py` runs the conversations, `model_list.py`
+  lists models for the viewer. Its [README](multiturn/README.md) describes the design, the
+  metrics and how to read an episode.
+- [`analysis/`](analysis/) — `review.py` (the checker and tallies) and `ci.py` (confidence
+  intervals).
 - `serve.py` — starts a local vLLM server for the model under test, with per-family settings
   (tool-call parser, reasoning parser, dtype, temperature) in `FAMILIES`.
 - `notebooks/run_main_study.ipynb` — run the main study in Colab: keep your model in `MODELS`,
@@ -94,13 +96,13 @@ whether the settings work.
 With a vLLM server already serving the model (see `serve.py`):
 
 ```
-python multiturn/run_pilot.py --model qwen3-4b --family Qwen3 --rounds 0 10 --episodes 20 \
+python multiturn/run.py --model qwen3-4b --family Qwen3 --rounds 0 10 --episodes 20 \
     --temperature 0.6 --out results/multiturn/qwen3-4b
 ```
 
 Tally from a notebook:
 
 ```python
-from multiturn.review import review_summary
+from analysis.review import review_summary
 review_summary("results/multiturn/qwen3-1.7b")
 ```

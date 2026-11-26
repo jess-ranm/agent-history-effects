@@ -15,9 +15,9 @@ from pathlib import Path
 
 
 # Per-family vLLM settings: how the model writes tool calls and thinking, which dtype it needs,
-# and the sampling temperature its authors recommend (passed to run_pilot.py --temperature).
+# and the sampling temperature its authors recommend (passed to multiturn/run.py --temperature).
 # reasoning=None leaves the thinking inside the message text as <think>...</think> (Qwen3, as in
-# the pilot); with a reasoning parser vLLM returns it separately and run_pilot.py saves it per turn.
+# the pilot); with a reasoning parser vLLM returns it separately and multiturn/run.py saves it per turn.
 FAMILIES = {
     "Qwen3":   dict(tool_parser="hermes",       reasoning=None,            dtype="half",     temperature=0.6),
     "Qwen3.5": dict(tool_parser="qwen3_coder",  reasoning="qwen3",         dtype="bfloat16", temperature=0.6),

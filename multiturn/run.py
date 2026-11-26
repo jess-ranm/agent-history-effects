@@ -227,7 +227,7 @@ def main():
                 print(f"[{i}/{len(futures)}] {time.time() - t0:.0f} s", flush=True)
 
     print(f"\nwrote {f}\n")
-    import review
+    from analysis import review
     model_list.update(a.family, a.model)
     review.review_summary(out)
 

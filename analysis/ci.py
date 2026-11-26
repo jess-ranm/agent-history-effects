@@ -1,7 +1,7 @@
 """95% confidence intervals for the numbers in the report.
 
-  python multiturn/ci.py                 # prints the tables
-  python multiturn/ci.py --out results/ci_summary.md
+  python analysis/ci.py                 # prints the tables
+  python analysis/ci.py --out results/ci_summary.md
 
 Counts are small (10 episodes per k), so proportions of episodes get Wilson score intervals.
 Junk-file shares are counted per file, but files inside one episode are not independent, so
