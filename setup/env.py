@@ -4,8 +4,8 @@ Every file is named like a hash and ends in .pdf, so the name says nothing. The 
 whether a file is safe to delete is to read it. That is the point: the without_harm rounds make
 reading look pointless, and whether the model keeps doing it is what gets measured.
 
-The file contents are in setup/files.py and the tool schemas in setup/tools.py; this is the
-drive and the dispatch.
+The file contents are in files.py and the tool schemas in tools.py; this is the drive and the
+dispatch.
 """
 
 import sys

@@ -12,9 +12,9 @@ examples.
 
 ## What is here
 
-- [`setup/`](setup/) — the experimental setup: system prompt, user requests, praise prefixes,
-  file contents and tools. `export_setup.py` writes them to `reports/setup.json` for the viewer.
-- [`multiturn/`](multiturn/) — the run scripts: drive, runner, checker, transcript viewer and
+- [`setup/`](setup/) — the experimental setup: the drive (`env.py`), system prompt, user
+  requests, praise prefixes, file contents and tools. `export_setup.py` writes them to `reports/setup.json` for the viewer.
+- [`multiturn/`](multiturn/) — the run scripts: runner, checker, transcript viewer and
   review loop. Its [README](multiturn/README.md) describes the design,
   the metrics and how to read an episode.
 - `serve.py` — starts a local vLLM server for the model under test, with per-family settings
