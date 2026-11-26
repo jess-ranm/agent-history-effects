@@ -12,8 +12,10 @@ examples.
 
 ## What is here
 
-- [`multiturn/`](multiturn/) — the whole experiment: environment, runner, checker,
-  transcript viewer and review loop. Its [README](multiturn/README.md) describes the design,
+- [`setup/`](setup/) — the experimental setup: system prompt, user requests, praise prefixes,
+  file contents and tools. `export_setup.py` writes them to `reports/setup.json` for the viewer.
+- [`multiturn/`](multiturn/) — the run scripts: drive, runner, checker, transcript viewer and
+  review loop. Its [README](multiturn/README.md) describes the design,
   the metrics and how to read an episode.
 - `serve.py` — starts a local vLLM server for the model under test, with per-family settings
   (tool-call parser, reasoning parser, dtype, temperature) in `FAMILIES`.
