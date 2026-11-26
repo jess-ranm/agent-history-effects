@@ -13,7 +13,7 @@ examples.
 ## What is here
 
 - [`setup/`](setup/) — the experimental setup: the drive (`env.py`), system prompt, user
-  requests, praise prefixes, file contents and tools. `export_setup.py` writes them to `reports/setup.json` for the viewer.
+  requests, praise prefixes, file contents and tools. All of it is in `setup.json`, which the code and the viewer both read.
 - [`multiturn/`](multiturn/) — the run scripts: `run_pilot.py` runs the conversations,
   `review.py` checks them, `model_list.py` lists models for the viewer. Its
   [README](multiturn/README.md) describes the design, the metrics and how to read an episode.
