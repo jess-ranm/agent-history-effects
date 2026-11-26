@@ -1100,9 +1100,6 @@ function markActive(top, model) {
   document.querySelectorAll("#family-models button").forEach(b => b.classList.toggle("active", b.textContent === model));
 }
 
-// the Setup tab: read straight from the code in setup/, the same way the results are read from
-// results/, so it always shows what the experiment runs. setup/ holds plain Python constants
-// (strings, lists, tuples, dicts); pyValue parses just those.
 function pyValue(src, name) {
   const m = new RegExp(`^${name}\\s*=\\s*`, "m").exec(src);
   if (!m) throw new Error(`${name} not found`);
