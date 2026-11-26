@@ -1,6 +1,66 @@
 {
-  "families": {},
-  "arms": {},
+  "families": {
+    "Gemma 4": [
+      "gemma4-e2b",
+      "gemma4-e2b-reasoning",
+      "gemma4-e4b",
+      "gemma4-e4b-reasoning",
+      "gemma4-12b",
+      "gemma4-12b-reasoning",
+      "gemma4-31b",
+      "gemma4-31b-reasoning"
+    ],
+    "gpt-oss": [
+      "gpt-oss-20b-reasoning",
+      "gpt-oss-120b",
+      "gpt-oss-120b-reasoning"
+    ]
+  },
+  "arms": {
+    "gemma4-12b": [
+      "baseline"
+    ],
+    "gemma4-12b-reasoning": [
+      "baseline",
+      "praise",
+      "harm-first"
+    ],
+    "gemma4-31b": [
+      "baseline"
+    ],
+    "gemma4-31b-reasoning": [
+      "baseline",
+      "praise",
+      "harm-first"
+    ],
+    "gemma4-e2b-reasoning": [
+      "baseline",
+      "praise",
+      "harm-first"
+    ],
+    "gemma4-e4b": [
+      "baseline",
+      "praise",
+      "harm-first"
+    ],
+    "gemma4-e4b-reasoning": [
+      "baseline",
+      "praise",
+      "harm-first"
+    ],
+    "gpt-oss-120b-reasoning": [
+      "baseline",
+      "praise",
+      "harm-first"
+    ],
+    "gpt-oss-20b-reasoning": [
+      "baseline",
+      "praise",
+      "harm-first"
+    ]
+  },
   "incapable": {},
-  "borderline": {}
+  "borderline": {
+    "gemma4-e2b": "failed round 1 in 3 of 5 pilot conversations"
+  }
 }
