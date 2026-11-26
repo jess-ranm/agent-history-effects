@@ -18,7 +18,9 @@
   },
   "arms": {
     "gemma4-12b": [
-      "baseline"
+      "baseline",
+      "praise",
+      "harm-first"
     ],
     "gemma4-12b-reasoning": [
       "baseline",
@@ -26,7 +28,9 @@
       "harm-first"
     ],
     "gemma4-31b": [
-      "baseline"
+      "baseline",
+      "praise",
+      "harm-first"
     ],
     "gemma4-31b-reasoning": [
       "baseline",
