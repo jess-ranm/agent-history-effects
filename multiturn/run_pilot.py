@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from setup.env import CleanupEnv
 from setup.files import make_files, SENSITIVE
-from setup.prompts import SYSTEM, REQUESTS, PRAISES
+from setup.prompts import SYSTEM, REQUESTS, PRAISES, NEUTRAL
 
 THINK = re.compile(r"<think>(.*?)</think>", re.S)
 
@@ -99,7 +99,7 @@ def asks_for_input(text):
 
 
 def episode(base, model, rounds, seed, n_files, temperature, max_tokens, max_steps, praise=False,
-            harm_first=False):
+            harm_first=False, neutral_turns=0):
     """rounds junk rounds and one round with the important file. Default: the important file comes
     last. harm_first: it comes at round 0 and the junk rounds follow."""
     rng = random.Random(seed)
@@ -108,8 +108,7 @@ def episode(base, model, rounds, seed, n_files, temperature, max_tokens, max_ste
     rng.shuffle(asks)                              # a different order of wordings each episode
     praises = PRAISES[:]
     random.Random(f"praise:{seed}").shuffle(praises)   # its own generator, so the files and requests do not change
-    messages = [{"role": "system", "content": SYSTEM},
-                {"role": "user", "content": asks[0]}]
+    messages = [{"role": "system", "content": SYSTEM}]
     junk_deleted, truncated = 0, 0
     reads_per_round, unread_per_round, cleared_per_round = [], [], []
     harm = None                                    # what the important-file round measured
@@ -119,6 +118,13 @@ def episode(base, model, rounds, seed, n_files, temperature, max_tokens, max_ste
     harm_round = plan.index("harm")
 
     env = CleanupEnv([])
+    neutral = NEUTRAL[:]
+    random.Random(f"neutral:{seed}").shuffle(neutral)
+    for q in neutral[:neutral_turns]:
+        messages.append({"role": "user", "content": q})
+        _, cut = play_round(base, model, messages, env, temperature, max_tokens, max_steps)
+        truncated += cut
+    messages.append({"role": "user", "content": asks[0]})
     for i, kind in enumerate(plan):
         if kind == "harm":
             files, secret = make_files(rng, n_files, sensitive)
@@ -162,7 +168,7 @@ def episode(base, model, rounds, seed, n_files, temperature, max_tokens, max_ste
                 junk_deleted_harm=harm["junk_deleted_harm"],
                 reads_per_round=reads_per_round, unread_per_round=unread_per_round,
                 cleared_per_round=cleared_per_round, cleared_harm=harm["cleared_harm"],
-                truncated=truncated, praise=praise, harm_first=harm_first,
+                truncated=truncated, praise=praise, harm_first=harm_first, neutral_turns=neutral_turns,
                 asked=asks_for_input(answer),
                 junk_deleted_before=junk_deleted,
                 think=think[:4000], answer=answer[:1500],
@@ -191,6 +197,9 @@ def main():
     ap.add_argument("--harm-first", action="store_true",
                     help="put the important file at round 0 and the junk rounds after it; if it survives "
                          "that round it leaves the drive, so later rounds are junk only (use a separate --out)")
+    ap.add_argument("--neutral-turns", type=int, default=0,
+                    help="neutral questions the model answers before the first cleanup request, for the padded "
+                         "baseline (--rounds 0 --neutral-turns 10, use a separate --out)")
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
@@ -211,7 +220,8 @@ def main():
     t0, rows = time.time(), []
     with ThreadPoolExecutor(max_workers=a.workers) as ex:
         futures = [ex.submit(episode, a.base_url, a.model, r, s, a.files,
-                             a.temperature, a.max_tokens, a.max_steps, a.praise, a.harm_first) for r, s in jobs]
+                             a.temperature, a.max_tokens, a.max_steps, a.praise, a.harm_first, a.neutral_turns)
+               for r, s in jobs]
         for i, fu in enumerate(as_completed(futures), 1):
             try:
                 row = fu.result()

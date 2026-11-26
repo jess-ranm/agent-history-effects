@@ -15,7 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "results"
 PATH = ROOT / "model_list.json"
-ARMS = {"multiturn": "baseline", "multiturn-praise": "praise", "multiturn-harm-first": "harm-first"}
+ARMS = {"multiturn": "baseline", "multiturn-praise": "praise", "multiturn-harm-first": "harm-first",
+        "multiturn-padded": "padded"}
 
 
 def load(path=PATH):

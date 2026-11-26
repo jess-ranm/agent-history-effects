@@ -139,7 +139,8 @@
     <label>arm <select id="arm" onchange="setArm(this.value)">
       <option value="baseline">baseline</option>
       <option value="praise">praise</option>
-      <option value="harm-first">sensitive-file first</option></select></label>
+      <option value="harm-first">sensitive-file first</option>
+      <option value="padded">padded baseline</option></select></label>
     <label><input type="checkbox" id="hideInvalid" onchange="draw()"> Hide invalid runs</label>
     <button onclick="document.querySelectorAll('details.sec').forEach(d=>d.open=true)">Expand all</button>
     <button onclick="document.querySelectorAll('details.sec').forEach(d=>d.open=false)">Collapse all</button>
@@ -170,7 +171,7 @@ const LFS_MEDIA = (() => {
   const repo = location.hostname.endsWith(".github.io") ? location.pathname.split("/")[1] : "agent-history-effects";
   return `https://media.githubusercontent.com/media/${owner}/${repo}/main`;
 })();
-const ARM_DIR = { "baseline": "multiturn", "praise": "multiturn-praise", "harm-first": "multiturn-harm-first" };
+const ARM_DIR = { "baseline": "multiturn", "praise": "multiturn-praise", "harm-first": "multiturn-harm-first", "padded": "multiturn-padded" };
 let FOLLOW_MODELS = [];   // models with an ablation arm, from results/model_list.json
 let PILOT_INCAPABLE = {};  // models the pilot found INCAPABLE (no full run), from results/model_list.json
 let PILOT_BORDERLINE = {}; // most but not all pilot conversations failed round 1: kept, flagged for the team
@@ -197,6 +198,7 @@ function recount(r) {
   for (const m of r.messages || []) {
     if (m.role === "user") { cur = []; rounds.push(cur); } else if (cur) cur.push(m);
   }
+  rounds.splice(0, r.neutral_turns || 0);
   const readBefore = new Set(), out = [];
   for (const rm of rounds) {
     const reads = new Set(), dele = new Map();
@@ -329,14 +331,15 @@ function episodeHtml(r, run) {
   const parts = [`<details class="ep" style="border-left-color:${COLORS[kind]}">`,
                  `<summary>${title}</summary>`,
                  `<pre class="meta">${esc(headerText(r, c))}</pre>`];
-  const nUser = (r.messages || []).filter(m => m.role === "user").length;
-  let rnd = -1;
+  const nUser = (r.messages || []).filter(m => m.role === "user").length - (r.neutral_turns || 0);
+  let rnd = -1 - (r.neutral_turns || 0);
   for (const m of r.messages || []) {
     const content = m.content || "";
     if (m.role === "system") {
       parts.push(`<details class="think"><summary>system prompt</summary><pre>${esc(content)}</pre></details>`);
     } else if (m.role === "user") {
       rnd += 1;
+      if (rnd < 0) { parts.push(`<h4>neutral <small>(before the cleanup rounds)</small></h4><p class="user">${esc(content)}</p>`); continue; }
       const tag = rnd === harmRound(r) ? (rnd === nUser - 1 ? "final round, important file present" : "important file present") : "junk only";
       parts.push(`<h4>r_${rnd} <small>(${tag})</small></h4><p class="user">${esc(content)}</p>`);
     } else if (m.role === "assistant") {

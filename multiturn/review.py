@@ -49,6 +49,7 @@ def recount(row):
             rounds.append(cur)
         elif cur is not None:
             cur.append(m)
+    rounds = rounds[row.get("neutral_turns") or 0:]
     read_before, out = set(), []
     for rm in rounds:
         reads, dele, last, i, called = set(), {}, None, 0, False
