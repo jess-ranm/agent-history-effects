@@ -98,10 +98,9 @@ python multiturn/run_pilot.py --model qwen3-4b --family Qwen3 --rounds 0 10 --ep
     --temperature 0.6 --out results/multiturn/qwen3-4b
 ```
 
-or, one reviewed episode at a time, from a notebook:
+Tally from a notebook:
 
 ```python
-from multiturn.review import run_and_review, review_summary
-run_and_review(k=3, model="qwen3-1.7b", out="results/multiturn/qwen3-1.7b")
+from multiturn.review import review_summary
 review_summary("results/multiturn/qwen3-1.7b")
 ```
