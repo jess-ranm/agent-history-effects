@@ -1100,7 +1100,47 @@ function markActive(top, model) {
   document.querySelectorAll("#family-models button").forEach(b => b.classList.toggle("active", b.textContent === model));
 }
 
-// the Setup tab: reports/setup.json, written from setup/ by setup/export_setup.py when the site publishes
+// the Setup tab: read straight from the code in setup/, the same way the results are read from
+// results/, so it always shows what the experiment runs. setup/ holds plain Python constants
+// (strings, lists, tuples, dicts); pyValue parses just those.
+function pyValue(src, name) {
+  const m = new RegExp(`^${name}\\s*=\\s*`, "m").exec(src);
+  if (!m) throw new Error(`${name} not found`);
+  let i = m.index + m[0].length;
+  const ws = () => { for (;;) { while (/\s/.test(src[i])) i++; if (src[i] !== "#") return; while (i < src.length && src[i] !== "\n") i++; } };
+  const str = () => {
+    const q = src[i++]; let out = "";
+    while (src[i] !== q) {
+      if (src[i] === "\\") { const c = src[i + 1]; out += { n: "\n", t: "\t" }[c] ?? c; i += 2; }
+      else out += src[i++];
+    }
+    i++; return out;
+  };
+  const seq = close => {
+    const items = []; let comma = false; i++;
+    for (;;) {
+      ws(); if (src[i] === close) { i++; return { items, comma }; }
+      items.push(val()); ws();
+      if (src[i] === ",") { comma = true; i++; }
+    }
+  };
+  const val = () => {
+    ws(); const c = src[i];
+    if (c === '"' || c === "'") { let s = str(); for (;;) { const j = i; ws(); if (src[i] === '"' || src[i] === "'") s += str(); else { i = j; return s; } } }
+    if (c === "[") return seq("]").items;
+    if (c === "(") { const r = seq(")"); return r.items.length === 1 && !r.comma ? r.items[0] : r.items; }
+    if (c === "{") {
+      const o = {}; i++;
+      for (;;) { ws(); if (src[i] === "}") { i++; return o; } const k = val(); ws(); i++; o[k] = val(); ws(); if (src[i] === ",") i++; }
+    }
+    const t = /^-?\d+(\.\d+)?|^True|^False|^None/.exec(src.slice(i));
+    if (!t) throw new Error(`cannot read ${name} at "${src.slice(i, i + 20)}"`);
+    i += t[0].length;
+    return { True: true, False: false, None: null }[t[0]] ?? Number(t[0]);
+  };
+  return val();
+}
+
 async function loadSetup() {
   current = SETUP;
   showView(SETUP);
@@ -1109,8 +1149,24 @@ async function loadSetup() {
   const el = document.getElementById("setup");
   el.innerHTML = "<p>Loading…</p>";
   let d;
-  try { const r = await fetch("setup.json", { cache: "no-store" }); if (!r.ok) throw new Error(r.status); d = await r.json(); }
-  catch (e) { el.innerHTML = `<p>no setup.json (${esc(e.message)}): run "python setup/export_setup.py" and serve the page over http</p>`; return; }
+  try {
+    const code = {};
+    for (const f of ["prompts", "tools", "files"]) {
+      const r = await fetch(`../setup/${f}.py`, { cache: "no-store" });
+      if (!r.ok) throw new Error(`setup/${f}.py: ${r.status}`);
+      code[f] = await r.text();
+    }
+    d = {
+      system_prompt: pyValue(code.prompts, "SYSTEM"),
+      user_requests: pyValue(code.prompts, "REQUESTS"),
+      praise_prefixes: pyValue(code.prompts, "PRAISES"),
+      tools: pyValue(code.tools, "TOOLS"),
+      junk_files: pyValue(code.files, "JUNK"),
+      junk_note: "Templates: each {field} is filled with random values per file, so no two junk files are identical.",
+      sensitive_files: pyValue(code.files, "SENSITIVE").map(([kind, content]) => ({ kind, content })),
+      file_names: "Every file is named like a hash and ends in .pdf (e.g. 46bbe9e8.pdf), so the name says nothing.",
+    };
+  } catch (e) { el.innerHTML = `<p>could not read setup/ (${esc(e.message)}): serve the page over http</p>`; return; }
   const pre = t => `<pre>${esc(t)}</pre>`;
   el.innerHTML =
     `<h3>System prompt</h3>${pre(d.system_prompt)}` +
