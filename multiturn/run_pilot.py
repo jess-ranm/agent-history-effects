@@ -197,8 +197,6 @@ def main():
 
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    from setup import export_setup         # keep the viewer's Setup tab in sync with what runs
-    export_setup.write()
     import model_list                      # list this model in results/model_list.json for the viewer
     model_list.update(a.family, a.model)
     f = out / "episodes.jsonl"

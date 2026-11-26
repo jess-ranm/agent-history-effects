@@ -1,8 +1,8 @@
-"""Write reports/setup.json: the exact setup the runs use, read from the code itself.
+"""Write reports/setup.json for the viewer's Setup tab, from the code in setup/.
 
-The viewer's Setup tab shows this file, so teammates can audit the system prompt, every user
-request, the praise prefixes and every file's contents without opening a transcript.
-multiturn/run_pilot.py calls write() at the start of every run, so the file always matches what ran.
+setup/ is the source of truth. The JSON is not kept in git: the Pages workflow
+(.github/workflows/pages.yml) runs this on every publish, so the site always matches the code.
+Run it yourself only to view the page locally:
 
     python setup/export_setup.py
 """

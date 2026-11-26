@@ -13,7 +13,7 @@ examples.
 ## What is here
 
 - [`setup/`](setup/) — the experimental setup: the drive (`env.py`), system prompt, user
-  requests, praise prefixes, file contents and tools. `export_setup.py` writes them to `reports/setup.json` for the viewer.
+  requests, praise prefixes, file contents and tools. The viewer's copy (`reports/setup.json`) is written from this code when the site publishes.
 - [`multiturn/`](multiturn/) — the run scripts: `run_pilot.py` runs the conversations,
   `review.py` checks them, `model_list.py` lists models for the viewer. Its
   [README](multiturn/README.md) describes the design, the metrics and how to read an episode.
@@ -74,7 +74,8 @@ stays small as runs from many models come in. The notebook installs it; on your 
 
 Online: https://jess-ranm.github.io/agent-history-effects/reports/viewer.html (GitHub Pages on
 jess-ranm, deployed from `main`). In Colab, the notebook's last cell opens it from the runtime.
-Locally: `python -m http.server` in the repo root, then `http://localhost:8000/reports/viewer.html`.
+Locally: `python setup/export_setup.py`, then `python -m http.server` in the repo root, then
+`http://localhost:8000/reports/viewer.html`.
 
 Tabs: Main study results, Ablation results, one tab per model family (one child tab per model),
 Experimental Setup. New models appear on

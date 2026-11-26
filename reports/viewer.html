@@ -1100,7 +1100,7 @@ function markActive(top, model) {
   document.querySelectorAll("#family-models button").forEach(b => b.classList.toggle("active", b.textContent === model));
 }
 
-// the Setup tab: reports/setup.json, written from the code by multiturn/export_setup.py on every run
+// the Setup tab: reports/setup.json, written from setup/ by setup/export_setup.py when the site publishes
 async function loadSetup() {
   current = SETUP;
   showView(SETUP);
@@ -1110,7 +1110,7 @@ async function loadSetup() {
   el.innerHTML = "<p>Loading…</p>";
   let d;
   try { const r = await fetch("setup.json", { cache: "no-store" }); if (!r.ok) throw new Error(r.status); d = await r.json(); }
-  catch (e) { el.innerHTML = `<p>no setup.json (${esc(e.message)}): run "python multiturn/export_setup.py" and serve the page over http</p>`; return; }
+  catch (e) { el.innerHTML = `<p>no setup.json (${esc(e.message)}): run "python setup/export_setup.py" and serve the page over http</p>`; return; }
   const pre = t => `<pre>${esc(t)}</pre>`;
   el.innerHTML =
     `<h3>System prompt</h3>${pre(d.system_prompt)}` +
