@@ -127,13 +127,11 @@ tables print when the run ends.
 ## Inspecting episodes
 
 ```python
-from multiturn.review import run_and_review, review_summary
-
-run_and_review(k=4, model="qwen3-1.7b", out=MT)   # one episode, hand-run
+from multiturn.review import review_summary
 review_summary(MT, model="qwen3-1.7b")            # the tally
 ```
 
-For reading many transcripts, open `reports/viewer.html` — it fetches each model's pushed
+To read transcripts, open `reports/viewer.html` — it fetches each model's pushed
 `episodes.jsonl` in the browser and renders every episode as a collapsible block, verdict
 colored in the summary line (red = eroded, green = held, grey = nil), thinking in italics
 behind its own toggle, with an eroded-only filter. The experiments write the data once; the
@@ -143,7 +141,7 @@ over http: GitHub Pages, or `python -m http.server` in the repo root.
 ## Confidence intervals
 
 ```
-python multiturn/ci.py --out results/ci_summary.md
+python analysis/calculate_significance.py --out results/ci_summary.md
 ```
 
 Wilson 95% intervals for every rate reported in the paper, an episode-level bootstrap for the

@@ -12,9 +12,12 @@ examples.
 
 ## What is here
 
-- [`multiturn/`](multiturn/) — the whole experiment: environment, runner, checker,
-  transcript viewer and review loop. Its [README](multiturn/README.md) describes the design,
-  the metrics and how to read an episode.
+- [`setup/`](setup/) — the experimental setup: the drive (`env.py`), system prompt, user
+  requests, praise prefixes, file contents and tools. `export_setup.py` writes them to `reports/setup.json` for the viewer.
+- [`multiturn/`](multiturn/) — the run scripts: `run_pilot.py` runs the conversations,
+  `review.py` checks them, `model_list.py` lists models for the viewer. Its
+  [README](multiturn/README.md) describes the design, the metrics and how to read an episode.
+- [`analysis/`](analysis/) — `calculate_significance.py` (error bars and p-values).
 - `serve.py` — starts a local vLLM server for the model under test, with per-family settings
   (tool-call parser, reasoning parser, dtype, temperature) in `FAMILIES`.
 - `notebooks/run_main_study.ipynb` — run the main study in Colab: keep your model in `MODELS`,
@@ -96,10 +99,9 @@ python multiturn/run_pilot.py --model qwen3-4b --family Qwen3 --rounds 0 10 --ep
     --temperature 0.6 --out results/multiturn/qwen3-4b
 ```
 
-or, one reviewed episode at a time, from a notebook:
+Tally from a notebook:
 
 ```python
-from multiturn.review import run_and_review, review_summary
-run_and_review(k=3, model="qwen3-1.7b", out="results/multiturn/qwen3-1.7b")
+from multiturn.review import review_summary
 review_summary("results/multiturn/qwen3-1.7b")
 ```

@@ -423,7 +423,7 @@ const def = key => defHtml(DEFS[key]);
 
 // ---- the four measures, in the order of the write-up ----
 const BAR = { after: "#2f7d5b", blind: "#e08a3c", never: "#b42318", erosion: "#b42318", del: "#1f5a96" };
-// 95% Wilson score interval (percent), the same one multiturn/ci.py uses
+// 95% Wilson score interval (percent), the same one analysis/calculate_significance.py uses
 const wilson = (x, n) => { if (!n) return null; const z = 1.96, p = x / n, d = 1 + z * z / n, c = p + z * z / (2 * n), h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n));
   return [100 * Math.max(0, (c - h) / d), 100 * Math.min(1, (c + h) / d)]; };
 const hw = w => Math.round((w[1] - w[0]) / 2);      // half-width of the interval, shown as +/-

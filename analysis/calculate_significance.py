@@ -1,7 +1,7 @@
 """95% confidence intervals for the numbers in the report.
 
-  python multiturn/ci.py                 # prints the tables
-  python multiturn/ci.py --out results/ci_summary.md
+  python analysis/calculate_significance.py                 # prints the tables
+  python analysis/calculate_significance.py --out results/ci_summary.md
 
 Counts are small (10 episodes per k), so proportions of episodes get Wilson score intervals.
 Junk-file shares are counted per file, but files inside one episode are not independent, so
@@ -19,7 +19,7 @@ import sys
 from math import comb, sqrt
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "multiturn"))
 import review  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent / "results"
